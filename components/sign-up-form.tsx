@@ -23,6 +23,7 @@ export function SignUpForm({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [repeatPassword, setRepeatPassword] = useState("");
+  const [fullName, setFullName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
@@ -34,7 +35,19 @@ export function SignUpForm({
     setError(null);
 
     if (password !== repeatPassword) {
-      setError("Passwords do not match");
+      setError("รหัสผ่านไม่ตรงกัน");
+      setIsLoading(false);
+      return;
+    }
+
+    if (password.length < 6) {
+      setError("รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร");
+      setIsLoading(false);
+      return;
+    }
+
+    if (!fullName.trim()) {
+      setError("กรุณากรอกชื่อ-นามสกุล");
       setIsLoading(false);
       return;
     }
@@ -44,13 +57,26 @@ export function SignUpForm({
         email,
         password,
         options: {
+          data: {
+            full_name: fullName,
+          },
           emailRedirectTo: `${window.location.origin}/protected`,
         },
       });
       if (error) throw error;
       router.push("/auth/sign-up-success");
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred");
+      if (error instanceof Error) {
+        if (error.message.includes("already registered")) {
+          setError("อีเมลนี้ได้ลงทะเบียนแล้ว");
+        } else if (error.message.includes("Invalid email")) {
+          setError("รูปแบบอีเมลไม่ถูกต้อง");
+        } else {
+          setError("เกิดข้อผิดพลาด: " + error.message);
+        }
+      } else {
+        setError("เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -60,18 +86,29 @@ export function SignUpForm({
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">Sign up</CardTitle>
-          <CardDescription>Create a new account</CardDescription>
+          <CardTitle className="text-2xl">สมัครสมาชิก</CardTitle>
+          <CardDescription>สร้างบัญชีใหม่เพื่อใช้งานระบบ</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSignUp}>
             <div className="flex flex-col gap-6">
               <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="fullName">ชื่อ-นามสกุล</Label>
+                <Input
+                  id="fullName"
+                  type="text"
+                  placeholder="นายสมชาย ใจดี"
+                  required
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="email">อีเมล</Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="m@example.com"
+                  placeholder="somchai@example.com"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -79,11 +116,12 @@ export function SignUpForm({
               </div>
               <div className="grid gap-2">
                 <div className="flex items-center">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password">รหัสผ่าน</Label>
                 </div>
                 <Input
                   id="password"
                   type="password"
+                  placeholder="อย่างน้อย 6 ตัวอักษร"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -91,11 +129,12 @@ export function SignUpForm({
               </div>
               <div className="grid gap-2">
                 <div className="flex items-center">
-                  <Label htmlFor="repeat-password">Repeat Password</Label>
+                  <Label htmlFor="repeat-password">ยืนยันรหัสผ่าน</Label>
                 </div>
                 <Input
                   id="repeat-password"
                   type="password"
+                  placeholder="กรอกรหัสผ่านอีกครั้ง"
                   required
                   value={repeatPassword}
                   onChange={(e) => setRepeatPassword(e.target.value)}
@@ -103,13 +142,13 @@ export function SignUpForm({
               </div>
               {error && <p className="text-sm text-red-500">{error}</p>}
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Creating an account..." : "Sign up"}
+                {isLoading ? "กำลังสมัครสมาชิก..." : "สมัครสมาชิก"}
               </Button>
             </div>
             <div className="mt-4 text-center text-sm">
-              Already have an account?{" "}
+              มีบัญชีอยู่แล้ว?{" "}
               <Link href="/auth/login" className="underline underline-offset-4">
-                Login
+                เข้าสู่ระบบ
               </Link>
             </div>
           </form>

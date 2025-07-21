@@ -38,7 +38,15 @@ export function ForgotPasswordForm({
       if (error) throw error;
       setSuccess(true);
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred");
+      if (error instanceof Error) {
+        if (error.message.includes("Invalid email")) {
+          setError("รูปแบบอีเมลไม่ถูกต้อง");
+        } else {
+          setError("เกิดข้อผิดพลาด: " + error.message);
+        }
+      } else {
+        setError("เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -48,35 +56,43 @@ export function ForgotPasswordForm({
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       {success ? (
         <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl">Check Your Email</CardTitle>
-            <CardDescription>Password reset instructions sent</CardDescription>
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
+              <svg className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <CardTitle className="text-2xl">ตรวจสอบอีเมลของคุณ</CardTitle>
+            <CardDescription>ส่งลิงก์รีเซ็ตรหัสผ่านแล้ว</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="text-center space-y-4">
             <p className="text-sm text-muted-foreground">
-              If you registered using your email and password, you will receive
-              a password reset email.
+              หากคุณเคยลงทะเบียนด้วยอีเมลและรหัสผ่าน คุณจะได้รับอีเมลสำหรับรีเซ็ตรหัสผ่าน
             </p>
+            <Button asChild className="w-full" variant="outline">
+              <Link href="/auth/login">
+                กลับไปหน้าเข้าสู่ระบบ
+              </Link>
+            </Button>
           </CardContent>
         </Card>
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle className="text-2xl">Reset Your Password</CardTitle>
+            <CardTitle className="text-2xl">รีเซ็ตรหัสผ่าน</CardTitle>
             <CardDescription>
-              Type in your email and we&apos;ll send you a link to reset your
-              password
+              กรอกอีเมลของคุณ เราจะส่งลิงก์สำหรับรีเซ็ตรหัสผ่านให้
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleForgotPassword}>
               <div className="flex flex-col gap-6">
                 <div className="grid gap-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">อีเมล</Label>
                   <Input
                     id="email"
                     type="email"
-                    placeholder="m@example.com"
+                    placeholder="somchai@example.com"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -84,16 +100,16 @@ export function ForgotPasswordForm({
                 </div>
                 {error && <p className="text-sm text-red-500">{error}</p>}
                 <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Sending..." : "Send reset email"}
+                  {isLoading ? "กำลังส่ง..." : "ส่งอีเมลรีเซ็ตรหัสผ่าน"}
                 </Button>
               </div>
               <div className="mt-4 text-center text-sm">
-                Already have an account?{" "}
+                มีบัญชีอยู่แล้ว?{" "}
                 <Link
                   href="/auth/login"
                   className="underline underline-offset-4"
                 >
-                  Login
+                  เข้าสู่ระบบ
                 </Link>
               </div>
             </form>

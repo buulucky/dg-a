@@ -47,15 +47,68 @@ export async function updateSession(request: NextRequest) {
   const { data } = await supabase.auth.getClaims();
   const user = data?.claims;
 
-  if (
-    request.nextUrl.pathname !== "/" &&
-    !user &&
-    !request.nextUrl.pathname.startsWith("/login") &&
-    !request.nextUrl.pathname.startsWith("/auth")
-  ) {
-    // no user, potentially respond by redirecting the user to the login page
+  const isAuthPage = request.nextUrl.pathname.startsWith("/auth");
+  const isProtectedPage = request.nextUrl.pathname.startsWith("/protected");
+  const isAdminPage = request.nextUrl.pathname.startsWith("/admin");
+  const isHomePage = request.nextUrl.pathname === "/";
+
+  // ถ้าไม่มี user และพยายามเข้าหน้าที่ต้องล็อกอิน
+  if (!user && (isProtectedPage || isAdminPage)) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
+    return NextResponse.redirect(url);
+  }
+
+  // ถ้ามี user แล้ว ตรวจสอบ profile และสถานะ
+  if (user && (isProtectedPage || isAdminPage)) {
+    try {
+      const { data: profile, error } = await supabase
+        .from('user_profiles')
+        .select('status, role')
+        .eq('id', user.sub)
+        .single();
+
+      if (error) {
+        console.error('Error fetching user profile:', error);
+        const url = request.nextUrl.clone();
+        url.pathname = "/auth/login";
+        return NextResponse.redirect(url);
+      }
+
+      // ตรวจสอบสถานะการอนุมัติ
+      if (profile.status === 'pending') {
+        const url = request.nextUrl.clone();
+        url.pathname = "/auth/pending-approval";
+        return NextResponse.redirect(url);
+      }
+
+      if (profile.status === 'rejected') {
+        const url = request.nextUrl.clone();
+        url.pathname = "/auth/account-rejected";
+        return NextResponse.redirect(url);
+      }
+
+      // ตรวจสอบสิทธิ์ admin
+      if (isAdminPage && (profile.role !== 'admin' || profile.status !== 'approved')) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/protected";
+        return NextResponse.redirect(url);
+      }
+
+    } catch (error) {
+      console.error('Error in middleware:', error);
+      const url = request.nextUrl.clone();
+      url.pathname = "/auth/login";
+      return NextResponse.redirect(url);
+    }
+  }
+
+  // ถ้ามี user แล้วและพยายามเข้าหน้า auth (ยกเว้นหน้าพิเศษ)
+  if (user && isAuthPage && 
+      !request.nextUrl.pathname.includes("pending-approval") &&
+      !request.nextUrl.pathname.includes("account-rejected")) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/protected";
     return NextResponse.redirect(url);
   }
 

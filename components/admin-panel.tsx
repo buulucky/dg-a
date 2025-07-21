@@ -31,10 +31,6 @@ export function AdminPanel() {
   const router = useRouter();
   const supabase = createClient();
 
-  useEffect(() => {
-    checkAuthAndLoadUsers();
-  }, []);
-
   const checkAuthAndLoadUsers = async () => {
     try {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -64,6 +60,10 @@ export function AdminPanel() {
     }
   };
 
+  useEffect(() => {
+    checkAuthAndLoadUsers();
+  }, [checkAuthAndLoadUsers]);
+
   const loadUsers = async () => {
     try {
       const { data, error } = await supabase
@@ -80,12 +80,18 @@ export function AdminPanel() {
     }
   };
 
+  type UpdateData = {
+    status: 'approved' | 'rejected';
+    approved_by: string;
+    approved_at: string;
+  };
+
   const updateUserStatus = async (userId: string, status: 'approved' | 'rejected') => {
     if (!currentUser) return;
 
     setProcessingId(userId);
     try {
-      const updateData: any = {
+      const updateData: UpdateData = {
         status,
         approved_by: currentUser.id,
         approved_at: new Date().toISOString()

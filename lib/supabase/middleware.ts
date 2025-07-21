@@ -50,7 +50,6 @@ export async function updateSession(request: NextRequest) {
   const isAuthPage = request.nextUrl.pathname.startsWith("/auth");
   const isProtectedPage = request.nextUrl.pathname.startsWith("/protected");
   const isAdminPage = request.nextUrl.pathname.startsWith("/admin");
-  const isHomePage = request.nextUrl.pathname === "/";
 
   // ถ้าไม่มี user และพยายามเข้าหน้าที่ต้องล็อกอิน
   if (!user && (isProtectedPage || isAdminPage)) {

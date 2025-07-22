@@ -24,13 +24,6 @@ export default async function ProtectedPage() {
 
   return (
     <div className="flex-1 w-full flex flex-col gap-8 max-w-4xl mx-auto p-6">
-      <div className="w-full">
-        <div className="bg-green-50 border border-green-200 text-sm p-4 rounded-md text-green-800 flex gap-3 items-center">
-          <InfoIcon size="16" strokeWidth={2} />
-          ยินดีต้อนรับเข้าสู่ระบบ! นี่คือหน้าที่เฉพาะสมาชิกเท่านั้นที่เข้าถึงได้
-        </div>
-      </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
           <CardHeader>

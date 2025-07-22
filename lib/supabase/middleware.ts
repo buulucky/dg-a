@@ -50,9 +50,10 @@ export async function updateSession(request: NextRequest) {
   const isAuthPage = request.nextUrl.pathname.startsWith("/auth");
   const isProtectedPage = request.nextUrl.pathname.startsWith("/protected");
   const isAdminPage = request.nextUrl.pathname.startsWith("/admin");
+  const isHomePage = request.nextUrl.pathname === "/" || request.nextUrl.pathname === "/home";
 
-  // ถ้าไม่มี user และพยายามเข้าหน้าที่ต้องล็อกอิน
-  if (!user && (isProtectedPage || isAdminPage)) {
+  // ถ้าไม่มี user และพยายามเข้าหน้าที่ต้องล็อกอิน หรือหน้าแรก
+  if (!user && (isProtectedPage || isAdminPage || isHomePage)) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
     return NextResponse.redirect(url);

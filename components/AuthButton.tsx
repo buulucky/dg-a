@@ -2,7 +2,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState, useRef } from "react";
-import { useRouter } from "next/navigation";
 
 export function AuthButton() {
   const [user, setUser] = useState<{id: string; email: string} | null>(null);
@@ -11,7 +10,6 @@ export function AuthButton() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
-  const router = useRouter();
 
   useEffect(() => {
     let isMounted = true;

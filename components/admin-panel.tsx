@@ -62,7 +62,20 @@ export function AdminPanel() {
 
   useEffect(() => {
     checkAuthAndLoadUsers();
-  }, [checkAuthAndLoadUsers]);
+    
+    // Listen สำหรับ auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') {
+        // ไม่ต้อง redirect ที่นี่ เพราะ AuthButton จะจัดการให้แล้ว
+        setCurrentUser(null);
+        setUsers([]);
+      }
+    });
+
+    return () => {
+      subscription?.unsubscribe();
+    };
+  }, []); // ลบ checkAuthAndLoadUsers dependency
 
   const loadUsers = async () => {
     try {

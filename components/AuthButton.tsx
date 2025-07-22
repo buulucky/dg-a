@@ -8,6 +8,7 @@ export function AuthButton() {
   const [user, setUser] = useState<{id: string; email: string} | null>(null);
   const [profile, setProfile] = useState<{full_name?: string; role?: string; status?: string} | null>(null);
   const [open, setOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
   const router = useRouter();
@@ -56,9 +57,27 @@ export function AuthButton() {
   }, [open]);
 
   const logout = async () => {
-    await supabase.auth.signOut();
-    setOpen(false);
-    router.push("/auth/login");
+    if (isLoggingOut) return; // ป้องกันการเรียกซ้ำ
+    
+    try {
+      setIsLoggingOut(true);
+      setOpen(false);
+      
+      // ลบ auth session
+      await supabase.auth.signOut();
+      
+      // Clear local state
+      setUser(null);
+      setProfile(null);
+      
+      // ใช้ window.location.replace เพื่อหลีกเลี่ยง router cache และ state listener conflicts
+      window.location.replace("/auth/login");
+    } catch (error) {
+      console.error("Logout error:", error);
+      // กรณี error ให้ redirect แบบ fallback
+      window.location.replace("/auth/login");
+    }
+    // ไม่ต้อง setIsLoggingOut(false) เพราะจะ redirect ออกไปแล้ว
   };
 
   if (!user) {
@@ -111,10 +130,11 @@ export function AuthButton() {
             <button
               role="menuitem"
               tabIndex={-1}
-              className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-blue-50"
+              className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-blue-50 disabled:opacity-50"
               onClick={logout}
+              disabled={isLoggingOut}
             >
-              ออกจากระบบ
+              {isLoggingOut ? "กำลังออกจากระบบ..." : "ออกจากระบบ"}
             </button>
           </div>
         </div>

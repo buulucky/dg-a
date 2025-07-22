@@ -4,9 +4,7 @@ import { useUser } from "@/hooks/useUser";
 import { AuthButton } from "./AuthButton";
 
 export default function Navbar() {
-  const user = useUser();
-  
-  if (!user) return null;
+  const { user } = useUser();
 
   return (
     <nav className="bg-purple-900 text-white shadow-md">

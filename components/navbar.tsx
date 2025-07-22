@@ -9,19 +9,17 @@ export default function Navbar() {
   if (!user) return null;
 
   return (
-    <nav className="bg-blue-700 text-white shadow-md">
+    <nav className="bg-purple-900 text-white shadow-md">
       <div className="max-w-6xl mx-auto px-4">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-
           <Link
             href="/"
-            className="flex items-center gap-2 font-bold text-xl hover:text-blue-200 transition"
+            className="flex items-center gap-2 font-bold text-xl hover:text-purple-200 transition"
           >
-            <span className="bg-white text-blue-700 rounded px-2 py-1 font-black">
-              DG
+            <span className="bg-white text-purple-900 rounded px-2 py-1 font-black">
+              DG-A
             </span>
-            <span>Admin</span>
           </Link>
           {/* Links */}
           <div className="flex gap-6 items-center">
@@ -29,16 +27,16 @@ export default function Navbar() {
               <>
                 <Link
                   href="/admin/companies"
-                  className="hover:text-blue-200 transition"
+                  className="hover:text-purple-200 transition"
                 >
-                  Companies
+                  จัดการบริษัท
                 </Link>
-                <Link href="/admin" className="hover:text-blue-200 transition">
-                  Admin
+                <Link href="/admin" className="hover:text-purple-200 transition">
+                  จัดการสมาชิก
                 </Link>
               </>
             )}
-            <Link href="/protected" className="hover:text-blue-200 transition">
+            <Link href="/protected" className="hover:text-purple-200 transition">
               Protected
             </Link>
           </div>

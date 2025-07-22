@@ -14,7 +14,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+
+type Company = {
+  id: string;
+  name: string;
+};
 
 export function SignUpForm({
   className,
@@ -24,9 +29,22 @@ export function SignUpForm({
   const [password, setPassword] = useState("");
   const [repeatPassword, setRepeatPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [companyId, setCompanyId] = useState("");
+  const [companies, setCompanies] = useState<Company[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+
+  // ดึงข้อมูลบริษัท
+  useEffect(() => {
+    async function fetchCompanies() {
+      const supabase = createClient();
+      const { data, error } = await supabase.from("companies").select("id, name");
+      if (error) return setError("ไม่สามารถโหลดรายชื่อบริษัทได้");
+      setCompanies(data || []);
+    }
+    fetchCompanies();
+  }, []);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,8 +70,15 @@ export function SignUpForm({
       return;
     }
 
+    if (!companyId) {
+      setError("กรุณาเลือกบริษัท");
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      const { error } = await supabase.auth.signUp({
+      // สมัครสมาชิก
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -63,7 +88,21 @@ export function SignUpForm({
           emailRedirectTo: `${window.location.origin}/protected`,
         },
       });
-      if (error) throw error;
+      if (signUpError) throw signUpError;
+
+      // อัพเดท profile เพิ่ม company_id (trigger สร้าง profile แล้ว)
+      if (signUpData.user) {
+        const { error: profileError } = await supabase
+          .from("user_profiles")
+          .update({
+            company_id: companyId,
+            role: "user",
+            status: "pending",
+          })
+          .eq("id", signUpData.user.id);
+        if (profileError) throw profileError;
+      }
+
       router.push("/auth/sign-up-success");
     } catch (error: unknown) {
       if (error instanceof Error) {
@@ -115,9 +154,24 @@ export function SignUpForm({
                 />
               </div>
               <div className="grid gap-2">
-                <div className="flex items-center">
-                  <Label htmlFor="password">รหัสผ่าน</Label>
-                </div>
+                <Label htmlFor="company">เลือกบริษัท</Label>
+                <select
+                  id="company"
+                  required
+                  value={companyId}
+                  onChange={(e) => setCompanyId(e.target.value)}
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">-- กรุณาเลือกบริษัท --</option>
+                  {companies.map((company) => (
+                    <option key={company.id} value={company.id}>
+                      {company.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="password">รหัสผ่าน</Label>
                 <Input
                   id="password"
                   type="password"
@@ -128,9 +182,7 @@ export function SignUpForm({
                 />
               </div>
               <div className="grid gap-2">
-                <div className="flex items-center">
-                  <Label htmlFor="repeat-password">ยืนยันรหัสผ่าน</Label>
-                </div>
+                <Label htmlFor="repeat-password">ยืนยันรหัสผ่าน</Label>
                 <Input
                   id="repeat-password"
                   type="password"

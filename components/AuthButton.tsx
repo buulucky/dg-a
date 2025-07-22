@@ -5,8 +5,8 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 export function AuthButton() {
-  const [user, setUser] = useState<any>(null);
-  const [profile, setProfile] = useState<any>(null);
+  const [user, setUser] = useState<{id: string; email: string} | null>(null);
+  const [profile, setProfile] = useState<{full_name?: string; role?: string; status?: string} | null>(null);
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
@@ -18,7 +18,7 @@ export function AuthButton() {
       const {
         data: { user: authUser },
       } = await supabase.auth.getUser();
-      if (isMounted) setUser(authUser);
+      if (isMounted) setUser(authUser ? { id: authUser.id, email: authUser.email || '' } : null);
       if (authUser) {
         const { data: profileData } = await supabase
           .from("user_profiles")

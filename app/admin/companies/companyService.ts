@@ -29,11 +29,21 @@ export async function addCompany(form: Partial<Company>) {
 export async function updateCompany(id: string, form: Partial<Company>) {
   const supabase = createClient();
   const { error } = await supabase.from("companies").update(form).eq("id", id);
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (error.code === "23503" || error.message.includes("violates foreign key constraint")) {
+      throw new Error("ไม่สามารถแก้ไขบริษัทนี้ได้ เนื่องจากมีผู้ใช้งานอ้างถึงบริษัทนี้อยู่ในระบบ");
+    }
+    throw new Error(error.message);
+  }
 }
 
 export async function deleteCompany(id: string) {
   const supabase = createClient();
   const { error } = await supabase.from("companies").delete().eq("id", id);
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (error.code === "23503" || error.message.includes("violates foreign key constraint")) {
+      throw new Error("ไม่สามารถลบบริษัทนี้ได้ เนื่องจากมีผู้ใช้งานอ้างถึงบริษัทนี้อยู่ในระบบ");
+    }
+    throw new Error(error.message);
+  }
 }

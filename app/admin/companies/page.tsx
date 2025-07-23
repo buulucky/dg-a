@@ -8,6 +8,7 @@ import {
   Company,
 } from "./companyService";
 import AddCompanyModal from "./AddCompanyModal";
+import { Button } from "@/components/ui/button";
 
 export default function CompaniesPage() {
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -15,6 +16,7 @@ export default function CompaniesPage() {
   const [form, setForm] = useState<Partial<Company>>({});
   const [editId, setEditId] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchCompanies()
@@ -38,19 +40,38 @@ export default function CompaniesPage() {
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     if (!editId) return;
-    await updateCompany(editId, form);
-    setCompanies(await fetchCompanies());
-    setEditId(null);
-    setForm({});
+    try {
+      await updateCompany(editId, form);
+      setCompanies(await fetchCompanies());
+      setEditId(null);
+      setForm({});
+    } catch (err: any) {
+      setError(err.message);
+    }
   };
 
   const handleDelete = async (id: string) => {
-    await deleteCompany(id);
-    setCompanies(await fetchCompanies());
+    setError(null);
+    try {
+      await deleteCompany(id);
+      setCompanies(await fetchCompanies());
+    } catch (err: any) {
+      setError(err.message);
+    }
   };
 
-  if (loading) return <div className="text-center py-10 text-gray-500">Loading...</div>;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
+          <p>กำลังโหลด...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto py-10">
@@ -66,6 +87,9 @@ export default function CompaniesPage() {
         onClose={() => setShowAddModal(false)}
         onAdd={handleAdd}
       />
+      {error && (
+        <div className="text-red-600 text-sm text-center my-4">{error}</div>
+      )}
       <div className="overflow-x-auto rounded shadow">
         <table className="w-full border-collapse bg-white">
           <thead>
@@ -114,19 +138,22 @@ export default function CompaniesPage() {
                     />
                   </td>
                   <td className="border px-4 py-2 text-center flex gap-2 justify-center">
-                    <button
+                    <Button
+                      type="button"
+                      variant="save"
                       onClick={handleUpdate}
-                      className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded shadow"
+                      className="px-3 py-1"
                     >
                       Save
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
+                      variant="cancel"
                       onClick={() => { setEditId(null); setForm({}); }}
-                      className="bg-gray-400 hover:bg-gray-500 text-white px-3 py-1 rounded shadow"
+                      className="px-3 py-1"
                     >
                       Cancel
-                    </button>
+                    </Button>
                   </td>
                 </tr>
               ) : (
@@ -136,18 +163,22 @@ export default function CompaniesPage() {
                   <td className="border px-4 py-2">{c.phone}</td>
                   <td className="border px-4 py-2">{c.email}</td>
                   <td className="border px-4 py-2 text-center">
-                    <button
+                    <Button
+                      type="button"
+                      variant="edit"
                       onClick={() => handleEdit(c)}
-                      className="bg-yellow-400 hover:bg-yellow-500 text-white px-3 py-1 rounded mr-2 shadow"
+                      className="px-3 py-1 mr-2"
                     >
                       Edit
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="destructive"
                       onClick={() => handleDelete(c.id)}
-                      className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded shadow"
+                      className="px-3 py-1"
                     >
                       Delete
-                    </button>
+                    </Button>
                   </td>
                 </tr>
               )

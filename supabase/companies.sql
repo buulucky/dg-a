@@ -12,7 +12,6 @@ CREATE TABLE IF NOT EXISTS companies (
 -- เปิดใช้งาน RLS
 ALTER TABLE companies ENABLE ROW LEVEL SECURITY;
 
--- Policy: admin ดู/เพิ่ม/แก้ไข/ลบ ได้ทุกแถว
 CREATE POLICY "Admin สามารถจัดการ companies ได้" ON companies
   FOR ALL TO authenticated
   USING (
@@ -23,3 +22,17 @@ CREATE POLICY "Admin สามารถจัดการ companies ได้" O
       AND status = 'approved'
     )
   );
+
+-- Trigger สำหรับอัปเดต updated_at เมื่อมีการแก้ไขข้อมูล companies
+CREATE OR REPLACE FUNCTION update_companies_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS companies_updated_at ON companies;
+CREATE TRIGGER companies_updated_at
+  BEFORE UPDATE ON companies
+  FOR EACH ROW EXECUTE FUNCTION update_companies_updated_at();

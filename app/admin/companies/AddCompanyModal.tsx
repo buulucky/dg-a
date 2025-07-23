@@ -1,5 +1,7 @@
 import { useState } from "react";
 import type { Company } from "./companyService";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 type Props = {
   open: boolean;
@@ -43,53 +45,42 @@ export default function AddCompanyModal({ open, onClose, onAdd }: Props) {
         >
           ×
         </button>
-        <h2 className="text-lg font-bold mb-4 text-blue-700 text-center">Add Company</h2>
+        <h2 className="text-lg font-bold mb-4 text-blue-700 text-center">
+          Add Company
+        </h2>
         <form onSubmit={handleSubmit} className="space-y-2">
-          <input
+          <Input
             name="name"
             placeholder="Name"
             value={form.name || ""}
             onChange={handleChange}
             required
-            className="border border-blue-300 rounded px-2 py-1 w-full bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 transition"
           />
-          <input
+          <Input
             name="address"
             placeholder="Address"
             value={form.address || ""}
             onChange={handleChange}
-            className="border border-blue-300 rounded px-2 py-1 w-full bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 transition"
           />
-          <input
+          <Input
             name="phone"
             placeholder="Phone"
             value={form.phone || ""}
             onChange={handleChange}
-            className="border border-blue-300 rounded px-2 py-1 w-full bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 transition"
           />
-          <input
+          <Input
             name="email"
             placeholder="Email"
             value={form.email || ""}
             onChange={handleChange}
-            className="border border-blue-300 rounded px-2 py-1 w-full bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 transition"
           />
           <div className="flex justify-end gap-2 mt-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-3 py-1 rounded text-sm transition"
-              disabled={loading}
-            >
+            <Button variant="cancel" onClick={onClose}>
               Cancel
-            </button>
-            <button
-              type="submit"
-              className={`bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded text-sm font-semibold shadow ${loading ? "opacity-60 cursor-not-allowed" : ""}`}
-              disabled={loading}
-            >
+            </Button>
+            <Button variant="default">
               {loading ? "Saving..." : "Add"}
-            </button>
+            </Button>
           </div>
           {success && (
             <div className="text-green-600 text-center mt-2 animate-fade-in text-sm">

@@ -31,36 +31,52 @@ export function AdminPanel() {
   const router = useRouter();
   const supabase = createClient();
 
-  const checkAuthAndLoadUsers = async () => {
-    try {
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !user) {
-        router.push('/auth/login');
-        return;
-      }
-
-      // ตรวจสอบว่าเป็น admin หรือไม่
-      const { data: profile, error: profileError } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-
-      if (profileError || !profile || profile.role !== 'admin' || profile.status !== 'approved') {
-        router.push('/protected');
-        return;
-      }
-
-      setCurrentUser(profile);
-      await loadUsers();
-    } catch (error) {
-      console.error('Error checking auth:', error);
-      router.push('/auth/login');
-    }
-  };
-
   useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        setUsers(data || []);
+      } catch (error) {
+        console.error('Error loading users:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const checkAuthAndLoadUsers = async () => {
+      try {
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        
+        if (authError || !user) {
+          router.push('/auth/login');
+          return;
+        }
+
+        // ตรวจสอบว่าเป็น admin หรือไม่
+        const { data: profile, error: profileError } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        if (profileError || !profile || profile.role !== 'admin' || profile.status !== 'approved') {
+          router.push('/protected');
+          return;
+        }
+
+        setCurrentUser(profile);
+        await loadUsers();
+      } catch (error) {
+        console.error('Error checking auth:', error);
+        router.push('/auth/login');
+      }
+    };
+
     checkAuthAndLoadUsers();
     
     // Listen สำหรับ auth state changes
@@ -75,7 +91,7 @@ export function AdminPanel() {
     return () => {
       subscription?.unsubscribe();
     };
-  }, []); // ลบ checkAuthAndLoadUsers dependency
+  }, [router, supabase]); // แก้ไข dependency array
 
   const loadUsers = async () => {
     try {

@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS user_profiles (
   id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
   email TEXT NOT NULL,
   full_name TEXT,
-  company_id UUID REFERENCES companies(id),
+  company_id BIGINT REFERENCES companies(company_id),
   role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'admin')),
   status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -12,6 +12,21 @@ CREATE TABLE IF NOT EXISTS user_profiles (
   approved_at TIMESTAMP WITH TIME ZONE
 );
 
+-- Trigger สำหรับอัปเดต updated_at เมื่อมีการแก้ไขข้อมูล user_profiles
+CREATE OR REPLACE FUNCTION update_user_profiles_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS user_profiles_updated_at ON user_profiles;
+CREATE TRIGGER user_profiles_updated_at
+  BEFORE UPDATE ON user_profiles
+  FOR EACH ROW EXECUTE FUNCTION update_user_profiles_updated_at();
+
+-- เปิด RLS (Row Level Security)
 ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "ผู้ใช้สามารถดูข้อมูลตัวเองได้" ON user_profiles

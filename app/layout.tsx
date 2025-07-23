@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
-import { ThemeProvider } from "next-themes";
+// import { ThemeProvider } from "next-themes";
 import "./globals.css";
 import ConditionalNavbar from "@/components/ConditionalNavbar";
 
@@ -28,10 +28,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.className} antialiased`}>
-        <ThemeProvider>
+        {/* <ThemeProvider> */}
           <ConditionalNavbar />
           {children}
-        </ThemeProvider>
+        {/* </ThemeProvider> */}
       </body>
     </html>
   );

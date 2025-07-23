@@ -17,8 +17,8 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 
 type Company = {
-  id: string;
-  name: string;
+  company_id: number;
+  company_name: string;
 };
 
 export function SignUpForm({
@@ -39,7 +39,7 @@ export function SignUpForm({
   useEffect(() => {
     async function fetchCompanies() {
       const supabase = createClient();
-      const { data, error } = await supabase.from("companies").select("id, name");
+      const { data, error } = await supabase.from("companies").select("company_id, company_name");
       if (error) return setError("ไม่สามารถโหลดรายชื่อบริษัทได้");
       setCompanies(data || []);
     }
@@ -164,8 +164,8 @@ export function SignUpForm({
                 >
                   <option value="">-- กรุณาเลือกบริษัท --</option>
                   {companies.map((company) => (
-                    <option key={company.id} value={company.id}>
-                      {company.name}
+                    <option key={company.company_id} value={company.company_id}>
+                      {company.company_name}
                     </option>
                   ))}
                 </select>

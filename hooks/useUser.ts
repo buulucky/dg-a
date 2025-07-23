@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 export function useUser() {
-  const [user, setUser] = useState<{ role: string; status: string } | null>(null);
+  const [user, setUser] = useState<{ role: string; status: string; company_id: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
@@ -18,12 +18,12 @@ export function useUser() {
         if (authUser) {
           const { data: profile } = await supabase
             .from("user_profiles")
-            .select("role, status")
+            .select("role, status, company_id")
             .eq("id", authUser.id)
             .single();
           
           if (isMounted) {
-            setUser(profile);
+            setUser(profile); // profile จะมี company_id ด้วย
             setLoading(false);
           }
         } else {

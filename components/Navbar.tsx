@@ -29,7 +29,7 @@ export default function Navbar() {
                 >
                   จัดการบริษัท
                 </Link>
-                <Link href="/admin" className="hover:text-purple-200 transition">
+                <Link href="/admin/user-management" className="hover:text-purple-200 transition">
                   จัดการสมาชิก
                 </Link>
               </>

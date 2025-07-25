@@ -13,21 +13,21 @@ CREATE TABLE IF NOT EXISTS user_profiles (
 );
 
 -- Trigger สำหรับอัปเดต updated_at เมื่อมีการแก้ไขข้อมูล user_profiles
-CREATE OR REPLACE FUNCTION update_user_profiles_updated_at()
+CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
-  NEW.updated_at = NOW();
+  NEW.updated_at = now();
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS user_profiles_updated_at ON user_profiles;
-CREATE TRIGGER user_profiles_updated_at
-  BEFORE UPDATE ON user_profiles
-  FOR EACH ROW EXECUTE FUNCTION update_user_profiles_updated_at();
+CREATE TRIGGER set_updated_at
+BEFORE UPDATE ON user_profiles
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
 
 -- เปิด RLS (Row Level Security)
-ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_profiles ENABLE ROW_LEVEL_SECURITY;
 
 CREATE POLICY "ผู้ใช้สามารถดูข้อมูลตัวเองได้" ON user_profiles
   FOR SELECT USING (auth.uid() = id);

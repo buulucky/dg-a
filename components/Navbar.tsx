@@ -29,13 +29,16 @@ export default function Navbar() {
                 >
                   จัดการบริษัท
                 </Link>
-                <Link href="/admin/user-management" className="hover:text-purple-200 transition">
+                <Link
+                  href="/admin/user-management"
+                  className="hover:text-purple-200 transition"
+                >
                   จัดการสมาชิก
                 </Link>
               </>
             )}
-            <Link href="/protected" className="hover:text-purple-200 transition">
-              Protected
+            <Link href="/employee" className="hover:text-purple-200 transition">
+              Employee
             </Link>
           </div>
           <div>

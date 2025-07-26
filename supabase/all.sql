@@ -207,9 +207,6 @@ CREATE TABLE employee_profiles (
   employee_id INT NOT NULL REFERENCES employees(employee_id),
   company_id INT NOT NULL REFERENCES companies(company_id),
   employee_code VARCHAR,
-  start_date DATE,
-  end_date DATE,
-  status_id INT NOT NULL REFERENCES employee_status_types(status_id),
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );

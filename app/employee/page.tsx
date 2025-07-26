@@ -35,10 +35,13 @@ export default function EmployeePage() {
   const loadEmployees = async () => {
     try {
       // Query จาก view ที่ join ข้อมูลครบชุด
-      const { data, error } = await supabase
+      let query = supabase
         .from('v_employee_profiles_with_contracts')
-        .select('*')
-        .eq('company_id', user?.company_id);
+        .select('*');
+      if (user?.role !== 'admin') {
+        query = query.eq('company_id', user?.company_id);
+      }
+      const { data, error } = await query;
 
       if (error) {
         console.error("เกิดข้อผิดพลาดในการโหลดข้อมูลพนักงาน:", error, "\ndata:", data);
@@ -58,7 +61,10 @@ export default function EmployeePage() {
     <main className="p-6">
       <div className="mb-6">
         <h1 className="text-2xl font-bold mb-4">จัดการพนักงาน</h1>
-        <AddEmployeeButton onEmployeeAdded={loadEmployees} />
+        {/* แสดงปุ่มเพิ่มพนักงานเฉพาะ user ที่ไม่ใช่ admin */}
+        {user?.role !== 'admin' && (
+          <AddEmployeeButton onEmployeeAdded={loadEmployees} />
+        )}
       </div>
 
       <div className="mt-6">
@@ -95,8 +101,8 @@ export default function EmployeePage() {
                   </td>
                 </tr>
               ) : (
-                employees.map((employee) => (
-                  <tr key={employee.employee_id} className="hover:bg-gray-50">
+                employees.map((employee, index) => (
+                  <tr key={`${employee.employee_id}-${index}`} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
                       {employee.personal_id}
                     </td>

@@ -30,6 +30,7 @@ export default function EmployeePage() {
     if (!loading && user?.company_id) {
       loadEmployees();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.company_id, loading]);
 
   const loadEmployees = async () => {

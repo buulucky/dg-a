@@ -18,9 +18,7 @@ export default function AddEmployeeButton({ onEmployeeAdded }: { onEmployeeAdded
   const [checkEmpResult, setCheckEmpResult] = useState<string | null>(null);
   const [canProceed, setCanProceed] = useState(false);
   const [selectedPoId, setSelectedPoId] = useState("");
-  const [poList, setPoList] = useState<{ po_id: string; po_number: string }[]>(
-    []
-  );
+  const [poList, setPoList] = useState<{ po_id: string; po_number: string }[]>([]);
   const [loadingPo, setLoadingPo] = useState(false);
   // Form data states
   const [formData, setFormData] = useState({
@@ -238,7 +236,6 @@ export default function AddEmployeeButton({ onEmployeeAdded }: { onEmployeeAdded
                   return;
                 const supabase = createClient();
                 let employeeIdToUse = employeeId;
-                let employeeRow;
                 let isUpdate = false;
                 // const dummyStatusId = 1;
                 try {
@@ -317,11 +314,15 @@ export default function AddEmployeeButton({ onEmployeeAdded }: { onEmployeeAdded
                   if (onEmployeeAdded) {
                     onEmployeeAdded();
                   }
-                } catch (err) {
+                } catch (err: unknown) {
                   console.error("Full error object:", err);
-                  console.error("Error message:", (err as any)?.message);
-                  console.error("Error details:", JSON.stringify(err, null, 2));
-                  alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล: " + ((err as any)?.message || "Unknown error"));
+                  if (err instanceof Error) {
+                    console.error("Error message:", err.message);
+                    alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล: " + err.message);
+                  } else {
+                    console.error("Error details:", JSON.stringify(err, null, 2));
+                    alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล: Unknown error");
+                  }
                 }
               }}
             >

@@ -8,11 +8,27 @@ import { createClient } from "@/lib/supabase/client";
 import { useUser } from "@/hooks/useUser";
 import { toast } from "@/lib/toast";
 
+// เพิ่ม keyframes สำหรับ animation
+const modalStyles = `
+  @keyframes modalFadeIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95) translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+`;
+
 interface AddEmployeeButtonProps {
   onEmployeeAdded?: () => void;
 }
 
-export default function AddEmployeeButton({ onEmployeeAdded }: AddEmployeeButtonProps) {
+export default function AddEmployeeButton({
+  onEmployeeAdded,
+}: AddEmployeeButtonProps) {
   const { user, loading } = useUser();
   const [open, setOpen] = useState(false);
   const [personalId, setPersonalId] = useState("");
@@ -23,7 +39,9 @@ export default function AddEmployeeButton({ onEmployeeAdded }: AddEmployeeButton
   const [checkEmpResult, setCheckEmpResult] = useState<string | null>(null);
   const [canProceed, setCanProceed] = useState(false);
   const [selectedPoId, setSelectedPoId] = useState("");
-  const [poList, setPoList] = useState<{ po_id: string; po_number: string }[]>([]);
+  const [poList, setPoList] = useState<{ po_id: string; po_number: string }[]>(
+    []
+  );
   const [loadingPo, setLoadingPo] = useState(false);
   // Form data states
   const [formData, setFormData] = useState({
@@ -150,9 +168,7 @@ export default function AddEmployeeButton({ onEmployeeAdded }: AddEmployeeButton
           setCanProceed(false);
         } else {
           // ไม่มีสัญญาที่ active = สามารถเพิ่มได้ และเติมข้อมูลอัตโนมัติ
-          setCheckResult(
-            "พบข้อมูลพนักงานในระบบ - สามารถเพิ่มได้"
-          );
+          setCheckResult("พบข้อมูลพนักงานในระบบ - สามารถเพิ่มได้");
           setCanProceed(true);
 
           // เติมข้อมูลลงฟอร์มอัตโนมัติ
@@ -208,7 +224,7 @@ export default function AddEmployeeButton({ onEmployeeAdded }: AddEmployeeButton
         .from("po")
         .select("po_id, po_number")
         .eq("company_id", user.company_id);
-        // ลบ .eq("status_id", 1) เพราะตาราง po ไม่มีฟิลด์นี้
+      // ลบ .eq("status_id", 1) เพราะตาราง po ไม่มีฟิลด์นี้
       console.log("PO query result:", { pos, poError });
 
       if (poError) throw poError;
@@ -237,15 +253,49 @@ export default function AddEmployeeButton({ onEmployeeAdded }: AddEmployeeButton
 
   return (
     <>
+      {/* เพิ่ม CSS animation */}
+      <style jsx>{modalStyles}</style>
+
       <Button variant="default" onClick={() => setOpen(true)}>
         เพิ่มพนักงาน
       </Button>
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-          <div className="bg-white rounded-lg shadow-lg p-6 min-w-[300px]">
-            <h2 className="text-lg font-semibold mb-4">เพิ่มพนักงาน</h2>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div
+            className="bg-white rounded-xl shadow-2xl p-8 min-w-[500px] max-w-2xl w-full relative transform transition-all duration-300 ease-out scale-100 max-h-[90vh] overflow-y-auto"
+            style={{
+              animation: "modalFadeIn 0.3s ease-out",
+            }}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-gray-800">
+                เพิ่มพนักงาน
+              </h2>
+              <button
+                onClick={() => {
+                  setOpen(false);
+                  clearAll();
+                }}
+                className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors duration-200"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
             <form
-              className="space-y-3"
+              className="space-y-4"
               onSubmit={async (e) => {
                 e.preventDefault();
                 if (!canProceed || !isFormFilled || !isEmpIdChecked || hasError)
@@ -310,15 +360,15 @@ export default function AddEmployeeButton({ onEmployeeAdded }: AddEmployeeButton
                       // end_date จะเป็น null สำหรับสัญญาที่ active
                     });
                   if (contractError) throw contractError;
-                  
+
                   // แสดงการแจ้งเตือนแบบ toast notification
                   const successMessage = isUpdate
                     ? "อัปเดตข้อมูลพนักงานสำเร็จ"
                     : "เพิ่มพนักงานสำเร็จ";
-                  
+
                   // ใช้ toast สำเร็จรูป
                   toast.success(successMessage);
-                  
+
                   setOpen(false);
                   clearAll();
                   // เรียก callback เพื่อรีเฟรชข้อมูลในตาราง
@@ -327,10 +377,17 @@ export default function AddEmployeeButton({ onEmployeeAdded }: AddEmployeeButton
                   console.error("Full error object:", err);
                   if (err instanceof Error) {
                     console.error("Error message:", err.message);
-                    toast.error("เกิดข้อผิดพลาดในการบันทึกข้อมูล: " + err.message);
+                    toast.error(
+                      "เกิดข้อผิดพลาดในการบันทึกข้อมูล: " + err.message
+                    );
                   } else {
-                    console.error("Error details:", JSON.stringify(err, null, 2));
-                    toast.error("เกิดข้อผิดพลาดในการบันทึกข้อมูล: Unknown error");
+                    console.error(
+                      "Error details:",
+                      JSON.stringify(err, null, 2)
+                    );
+                    toast.error(
+                      "เกิดข้อผิดพลาดในการบันทึกข้อมูล: Unknown error"
+                    );
                   }
                 }
               }}
@@ -519,37 +576,34 @@ export default function AddEmployeeButton({ onEmployeeAdded }: AddEmployeeButton
                           if (error && error.code !== "PGRST116") {
                             throw error;
                           }
-                          
-                          if (existingContracts && existingContracts.length > 0) {
+
+                          if (
+                            existingContracts &&
+                            existingContracts.length > 0
+                          ) {
                             // ตรวจสอบว่าเป็นสัญญาของบริษัทเดียวกันหรือไม่
                             let hasActiveInSameCompany = false;
-                            
+
                             for (const contract of existingContracts) {
                               const { data: po } = await supabase
                                 .from("po")
                                 .select("company_id")
                                 .eq("po_id", contract.po_id)
                                 .single();
-                                
+
                               if (po && po.company_id === user?.company_id) {
                                 hasActiveInSameCompany = true;
                                 break;
                               }
                             }
-                            
+
                             if (hasActiveInSameCompany) {
-                              setCheckEmpResult(
-                                "ไม่สามารถใช้ได้"
-                              );
+                              setCheckEmpResult("ไม่สามารถใช้ได้");
                             } else {
-                              setCheckEmpResult(
-                                "สามารถใช้ได้"
-                              );
+                              setCheckEmpResult("สามารถใช้ได้");
                             }
                           } else {
-                            setCheckEmpResult(
-                              "สามารถใช้ได้"
-                            );
+                            setCheckEmpResult("สามารถใช้ได้");
                           }
                         } catch (error) {
                           console.error("Error checking employee code:", error);
@@ -594,12 +648,9 @@ export default function AddEmployeeButton({ onEmployeeAdded }: AddEmployeeButton
                     ))}
                   </Select>
                   {!loadingPo && poList.length === 0 && canProceed && (
-                    <div className="text-orange-600 text-sm mt-1">
-                      ไม่พบ PO
-                    </div>
+                    <div className="text-orange-600 text-sm mt-1">ไม่พบ PO</div>
                   )}
                 </div>
-
 
                 <div className="mt-1">
                   <Label htmlFor="start_date">วันที่เริ่มงาน</Label>
@@ -614,10 +665,8 @@ export default function AddEmployeeButton({ onEmployeeAdded }: AddEmployeeButton
                     }
                   />
                 </div>
-
-
               </div>
-              <div className="flex gap-2 justify-end pt-2">
+              <div className="flex gap-3 justify-end pt-6 border-t border-gray-100">
                 <Button
                   variant="outline"
                   type="button"
@@ -626,7 +675,7 @@ export default function AddEmployeeButton({ onEmployeeAdded }: AddEmployeeButton
                     clearAll();
                   }}
                 >
-                  ปิด
+                  ยกเลิก
                 </Button>
                 <Button
                   variant="default"

@@ -8,6 +8,20 @@ import ChangeStatusButton from "@/components/employee/ChangeStatusButton";
 import AddEmployeeButton from "@/components/employee/AddEmployeeButton";
 import { toast } from "@/lib/toast";
 
+// เพิ่ม keyframes สำหรับ animation
+const modalStyles = `
+  @keyframes modalFadeIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95) translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+`;
+
 interface EmployeeTableClientProps {
   initialEmployees: Employee[];
   initialTotal: number;
@@ -66,6 +80,9 @@ function EmployeeTableClient({
 
   return (
     <>
+      {/* เพิ่ม CSS animation */}
+      <style jsx>{modalStyles}</style>
+      
       <div className="w-full">
         {/* Add Employee Button */}
         {showAddButton && (
@@ -240,115 +257,111 @@ function EmployeeTableClient({
 
       {/* Employee Detail Modal */}
       {selectedEmployee && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-start mb-4">
-                <h2 className="text-xl font-bold text-gray-900">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div 
+            className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto transform transition-all duration-300 ease-out scale-100"
+            style={{
+              animation: 'modalFadeIn 0.3s ease-out'
+            }}
+          >
+            <div className="p-8">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-gray-800">
                   ข้อมูลพนักงาน
                 </h2>
                 <button
-                  className="text-gray-400 hover:text-gray-600"
                   onClick={() => setSelectedEmployee(null)}
+                  className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors duration-200"
                 >
-                  <svg
-                    className="w-6 h-6"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-1">
+                  <label className="block text-sm font-medium text-gray-700">
                     เลขบัตรประชาชน
                   </label>
-                  <p className="text-sm text-gray-900">
+                  <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">
                     {selectedEmployee.personal_id}
                   </p>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                <div className="space-y-1">
+                  <label className="block text-sm font-medium text-gray-700">
                     รหัสพนักงาน
                   </label>
-                  <p className="text-sm text-gray-900">
+                  <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">
                     {selectedEmployee.employee_code || "-"}
                   </p>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                <div className="space-y-1">
+                  <label className="block text-sm font-medium text-gray-700">
                     ชื่อ-นามสกุล (ไทย)
                   </label>
-                  <p className="text-sm text-gray-900">
+                  <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">
                     {selectedEmployee.prefix_th}{" "}
                     {selectedEmployee.first_name_th}{" "}
                     {selectedEmployee.last_name_th}
                   </p>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                <div className="space-y-1">
+                  <label className="block text-sm font-medium text-gray-700">
                     ชื่อ-นามสกุล (อังกฤษ)
                   </label>
-                  <p className="text-sm text-gray-900">
+                  <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">
                     {selectedEmployee.prefix_en}{" "}
                     {selectedEmployee.first_name_en}{" "}
                     {selectedEmployee.last_name_en}
                   </p>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                <div className="space-y-1">
+                  <label className="block text-sm font-medium text-gray-700">
                     วันเกิด
                   </label>
-                  <p className="text-sm text-gray-900">
+                  <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">
                     {formatDate(selectedEmployee.birth_date)}
                   </p>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                <div className="space-y-1">
+                  <label className="block text-sm font-medium text-gray-700">
                     อายุ
                   </label>
-                  <p className="text-sm text-gray-900">
+                  <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">
                     {selectedEmployee.age ? `${selectedEmployee.age} ปี` : "-"}
                   </p>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                <div className="space-y-1">
+                  <label className="block text-sm font-medium text-gray-700">
                     ตำแหน่งงาน
                   </label>
-                  <p className="text-sm text-gray-900">
+                  <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">
                     {selectedEmployee.job_position_name || "-"}
                   </p>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                <div className="space-y-1">
+                  <label className="block text-sm font-medium text-gray-700">
                     วันที่เริ่มงาน
                   </label>
-                  <p className="text-sm text-gray-900">
+                  <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">
                     {formatDate(selectedEmployee.start_date)}
                   </p>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                <div className="space-y-1">
+                  <label className="block text-sm font-medium text-gray-700">
                     อายุงาน
                   </label>
-                  <p className="text-sm text-gray-900">
+                  <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">
                     {selectedEmployee.work_years &&
                     typeof selectedEmployee.work_years === "object" &&
                     (selectedEmployee.work_years.years ||
@@ -371,35 +384,36 @@ function EmployeeTableClient({
                   </p>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                <div className="space-y-1">
+                  <label className="block text-sm font-medium text-gray-700">
                     เลข PO
                   </label>
-                  <p className="text-sm text-gray-900">
+                  <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">
                     {selectedEmployee.po_number || "-"}
                   </p>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                <div className="space-y-1">
+                  <label className="block text-sm font-medium text-gray-700">
                     บริษัท
                   </label>
-                  <p className="text-sm text-gray-900">
+                  <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">
                     {selectedEmployee.company_name || "-"}
                   </p>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                <div className="space-y-1">
+                  <label className="block text-sm font-medium text-gray-700">
                     สถานะ
                   </label>
-                  <p className="text-sm text-gray-900">
+                  <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">
                     {selectedEmployee.status_code || "-"}
                   </p>
                 </div>
               </div>
               
-              <div className="mt-6 flex justify-between items-center">
+              {/* Footer */}
+              <div className="flex justify-between items-center pt-6 border-t border-gray-100">
                 {!isAdmin && (
                   <ChangeStatusButton
                     employeeId={selectedEmployee.employee_id}
@@ -415,7 +429,7 @@ function EmployeeTableClient({
                 <Button
                   variant="outline"
                   onClick={() => setSelectedEmployee(null)}
-                  className={isAdmin ? "ml-auto" : ""}
+                  className={`px-6 py-2 ${isAdmin ? "ml-auto" : ""}`}
                 >
                   ปิด
                 </Button>

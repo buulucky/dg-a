@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 
 export interface Employee {
   employee_id: string;
+  employee_code: string;
   personal_id: string;
   prefix_th: string;
   first_name_th: string;
@@ -11,11 +12,11 @@ export interface Employee {
   prefix_en: string;
   first_name_en: string;
   last_name_en: string;
-  employee_code: string;
-  company_id: number;
-  start_date: string;
-  po_number: string;
-  job_position_name: string;
+  birth_date: string | null;
+  start_date: string | null;
+  po_number: string | null;
+  job_position_name: string | null;
+  company_name: string | null;
 }
 
 export async function getEmployees(
@@ -52,12 +53,14 @@ export async function getEmployees(
     // สร้าง query สำหรับนับจำนวนทั้งหมด
     let countQuery = supabase
       .from('v_employee_profiles_with_contracts')
-      .select('*', { count: 'exact', head: true });
+      .select('*', { count: 'exact', head: true })
+      .eq('status_code', 'ACTIVE'); // << เพิ่มตรงนี้
 
     // สร้าง query สำหรับดึงข้อมูล
     let dataQuery = supabase
       .from('v_employee_profiles_with_contracts')
-      .select('*');
+      .select('*')
+      .eq('status_code', 'ACTIVE'); // << เพิ่มตรงนี้
 
     // ถ้าไม่ใช่ admin ให้ filter ตาม company_id
     if (userProfile.role !== 'admin') {

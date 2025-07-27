@@ -29,7 +29,7 @@ export default function AddEmployeeButton({ onEmployeeAdded }: { onEmployeeAdded
     first_name_en: "",
     last_name_en: "",
     birth_date: "",
-    start_date: "", // เพิ่มฟิลด์วันที่เริ่มงาน
+    start_date: "",
   });
   // Helper to check if all required fields are filled
   const isFormFilled =

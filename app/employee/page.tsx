@@ -1,5 +1,5 @@
 import AddEmployeeButton from "./AddEmployeeButton";
-import { EmployeeTableClient } from "./employee-table-client";
+import EmployeeTableClient from "./EmployeeTableClient";
 import { getEmployees, getUserRole } from "./actions";
 
 // บอก Next.js ว่าหน้านี้ต้อง dynamic rendering

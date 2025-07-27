@@ -4,7 +4,6 @@ import { createClient } from "@/lib/supabase/client";
 import { toast } from "@/lib/toast";
 
 export default function ChangePasswordForm() {
-  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -24,7 +23,6 @@ export default function ChangePasswordForm() {
       toast.error("เปลี่ยนรหัสผ่านไม่สำเร็จ: " + error.message);
     } else {
       toast.success("เปลี่ยนรหัสผ่านสำเร็จ");
-      setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     }

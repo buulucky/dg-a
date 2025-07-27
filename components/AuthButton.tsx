@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState, useRef } from "react";
-import ChangePasswordForm from "./ChangePasswordForm";
+import ChangePasswordForm from "@/components/ChangePasswordForm";
 
 // เพิ่ม keyframes สำหรับ animation
 const modalStyles = `

@@ -7,7 +7,11 @@ import { Select } from "@/components/ui/select";
 import { createClient } from "@/lib/supabase/client";
 import { useUser } from "@/hooks/useUser";
 
-export default function AddEmployeeButton({ onEmployeeAdded }: { onEmployeeAdded?: () => void }) {
+interface AddEmployeeButtonProps {
+  onEmployeeAdded?: () => void;
+}
+
+export default function AddEmployeeButton({ onEmployeeAdded }: AddEmployeeButtonProps) {
   const { user, loading } = useUser();
   const [open, setOpen] = useState(false);
   const [personalId, setPersonalId] = useState("");
@@ -321,10 +325,8 @@ export default function AddEmployeeButton({ onEmployeeAdded }: { onEmployeeAdded
                   );
                   setOpen(false);
                   clearAll();
-                  // เรียก callback เพื่อรีเฟรชตาราง
-                  if (onEmployeeAdded) {
-                    onEmployeeAdded();
-                  }
+                  // เรียก callback เพื่อรีเฟรชข้อมูลในตาราง
+                  if (onEmployeeAdded) onEmployeeAdded();
                 } catch (err: unknown) {
                   console.error("Full error object:", err);
                   if (err instanceof Error) {

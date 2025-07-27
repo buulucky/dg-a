@@ -1,4 +1,3 @@
-import AddEmployeeButton from "../../components/employee/AddEmployeeButton";
 import EmployeeTableClient from "../../components/employee/EmployeeTableClient";
 import { getEmployees, getUserRole } from "./actions";
 
@@ -17,19 +16,14 @@ export default async function EmployeePage() {
 
   return (
     <main className="p-6">
-      <div className="mb-6">
-
-        {!isAdmin && (
-          <AddEmployeeButton />
-        )}
-
-      </div>
       <div className="mt-6">
         <h2 className="text-xl font-semibold mb-4">รายชื่อพนักงาน</h2>
         <EmployeeTableClient 
           initialEmployees={employees}
           initialTotal={total}
           initialTotalPages={totalPages}
+          showAddButton={!isAdmin}
+          isAdmin={isAdmin}
         />
       </div>
     </main>

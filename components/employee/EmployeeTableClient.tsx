@@ -5,17 +5,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getEmployees, type Employee } from "../../app/employee/actions";
 import ChangeStatusButton from "@/components/employee/ChangeStatusButton";
+import AddEmployeeButton from "@/components/employee/AddEmployeeButton";
 
 interface EmployeeTableClientProps {
   initialEmployees: Employee[];
   initialTotal: number;
   initialTotalPages: number;
+  showAddButton?: boolean;
+  isAdmin?: boolean;
 }
 
 function EmployeeTableClient({
   initialEmployees,
   initialTotal,
   initialTotalPages,
+  showAddButton = false,
+  isAdmin = false,
 }: EmployeeTableClientProps) {
   const [employees, setEmployees] = useState<Employee[]>(initialEmployees);
   const [currentPage, setCurrentPage] = useState(1);
@@ -61,6 +66,20 @@ function EmployeeTableClient({
   return (
     <>
       <div className="w-full">
+        {/* Add Employee Button */}
+        {showAddButton && (
+          <div className="mb-6">
+            <AddEmployeeButton 
+              onEmployeeAdded={() => {
+                // รีเฟรชข้อมูลตารางหลังเพิ่มพนักงาน
+                startTransition(() => {
+                  loadEmployees(currentPage, searchQuery);
+                });
+              }}
+            />
+          </div>
+        )}
+
         {/* Search Form */}
         <form onSubmit={handleSearch} className="mb-6 flex gap-4">
           <Input
@@ -380,13 +399,22 @@ function EmployeeTableClient({
               </div>
               
               <div className="mt-6 flex justify-between items-center">
-                <ChangeStatusButton
-                  employeeId={selectedEmployee.employee_id}
-                  onStatusChange={() => setSelectedEmployee(null)}
-                />
+                {!isAdmin && (
+                  <ChangeStatusButton
+                    employeeId={selectedEmployee.employee_id}
+                    onStatusChange={() => {
+                      setSelectedEmployee(null);
+                      // รีเฟรชข้อมูลตารางหลังเปลี่ยนสถานะ
+                      startTransition(() => {
+                        loadEmployees(currentPage, searchQuery);
+                      });
+                    }}
+                  />
+                )}
                 <Button
                   variant="outline"
                   onClick={() => setSelectedEmployee(null)}
+                  className={isAdmin ? "ml-auto" : ""}
                 >
                   ปิด
                 </Button>

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { getEmployees, type Employee } from "../../app/employee/actions";
 import ChangeStatusButton from "@/components/employee/ChangeStatusButton";
 import AddEmployeeButton from "@/components/employee/AddEmployeeButton";
+import { toast } from "@/lib/toast";
 
 interface EmployeeTableClientProps {
   initialEmployees: Employee[];
@@ -35,7 +36,7 @@ function EmployeeTableClient({
   const loadEmployees = async (page: number, searchQuery: string) => {
     const result = await getEmployees(page, 15, searchQuery);
     if (result.error) {
-      alert("เกิดข้อผิดพลาดในการโหลดข้อมูลพนักงาน: " + result.error);
+      toast.error("เกิดข้อผิดพลาดในการโหลดข้อมูลพนักงาน: " + result.error);
     } else {
       setEmployees(result.data || []);
       setTotalEmployees(result.total || 0);
@@ -84,10 +85,10 @@ function EmployeeTableClient({
         <form onSubmit={handleSearch} className="mb-6 flex gap-4">
           <Input
             type="text"
-            placeholder="ค้นหาพนักงาน (ชื่อ, นามสกุล, เลขบัตรประชาชน, ตำแหน่ง)"
+            placeholder="ค้นหาพนักงาน"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="flex-1"
+            className="w-56"
           />
           <Button type="submit" disabled={isPending}>
             {isPending ? "กำลังค้นหา..." : "ค้นหา"}

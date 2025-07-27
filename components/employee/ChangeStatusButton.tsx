@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { updateEmployeeContractStatus } from "@/app/employee/actions.contract-status";
+import { toast } from "@/lib/toast";
 
 interface ChangeStatusButtonProps {
   employeeId: string;
@@ -60,9 +61,12 @@ export default function ChangeStatusButton({ employeeId, onStatusChange }: Chang
       }
       setSuccess(true);
       setShowModal(false);
+      toast.success("เปลี่ยนสถานะพนักงานสำเร็จ");
       if (onStatusChange) onStatusChange(status, reason, date);
     } catch (e) {
-      setError((e instanceof Error && e.message) ? e.message : "เกิดข้อผิดพลาด");
+      const errorMessage = (e instanceof Error && e.message) ? e.message : "เกิดข้อผิดพลาด";
+      setError(errorMessage);
+      toast.error("เกิดข้อผิดพลาดในการเปลี่ยนสถานะ: " + errorMessage);
     } finally {
       setLoading(false);
     }

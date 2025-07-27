@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { createClient } from "@/lib/supabase/client";
 import { useUser } from "@/hooks/useUser";
+import { toast } from "@/lib/toast";
 
 interface AddEmployeeButtonProps {
   onEmployeeAdded?: () => void;
@@ -47,7 +48,7 @@ export default function AddEmployeeButton({ onEmployeeAdded }: AddEmployeeButton
     selectedPoId.length > 0;
 
   // Helper to check if employeeId has been checked and is available
-  const isEmpIdChecked = checkEmpResult === "ไม่พบรหัสนี้ในสัญญาที่ active - สามารถใช้ได้";
+  const isEmpIdChecked = checkEmpResult === "สามารถใช้ได้";
 
   // Helper to check if there are any errors
   const hasError =
@@ -112,7 +113,7 @@ export default function AddEmployeeButton({ onEmployeeAdded }: AddEmployeeButton
 
       if (!employeeData) {
         // ไม่พบข้อมูล = สามารถเพิ่มพนักงานใหม่ได้
-        setCheckResult("ไม่พบเลขนี้ในระบบ - สามารถเพิ่มพนักงานใหม่ได้");
+        setCheckResult("ไม่พบเลขบัตรประชาชนนี้ในระบบ - สามารถเพิ่มพนักงานได้");
         setCanProceed(true);
         // ล้างข้อมูลฟอร์ม
         setFormData({
@@ -150,7 +151,7 @@ export default function AddEmployeeButton({ onEmployeeAdded }: AddEmployeeButton
         } else {
           // ไม่มีสัญญาที่ active = สามารถเพิ่มได้ และเติมข้อมูลอัตโนมัติ
           setCheckResult(
-            "พบข้อมูลพนักงานในระบบ แต่ไม่มีสัญญาที่ active - เติมข้อมูลอัตโนมัติ"
+            "พบข้อมูลพนักงานในระบบ - สามารถเพิ่มได้"
           );
           setCanProceed(true);
 
@@ -309,11 +310,15 @@ export default function AddEmployeeButton({ onEmployeeAdded }: AddEmployeeButton
                       // end_date จะเป็น null สำหรับสัญญาที่ active
                     });
                   if (contractError) throw contractError;
-                  alert(
-                    isUpdate
-                      ? "อัปเดตข้อมูลพนักงานสำเร็จ"
-                      : "เพิ่มพนักงานสำเร็จ"
-                  );
+                  
+                  // แสดงการแจ้งเตือนแบบ toast notification
+                  const successMessage = isUpdate
+                    ? "อัปเดตข้อมูลพนักงานสำเร็จ"
+                    : "เพิ่มพนักงานสำเร็จ";
+                  
+                  // ใช้ toast สำเร็จรูป
+                  toast.success(successMessage);
+                  
                   setOpen(false);
                   clearAll();
                   // เรียก callback เพื่อรีเฟรชข้อมูลในตาราง
@@ -322,10 +327,10 @@ export default function AddEmployeeButton({ onEmployeeAdded }: AddEmployeeButton
                   console.error("Full error object:", err);
                   if (err instanceof Error) {
                     console.error("Error message:", err.message);
-                    alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล: " + err.message);
+                    toast.error("เกิดข้อผิดพลาดในการบันทึกข้อมูล: " + err.message);
                   } else {
                     console.error("Error details:", JSON.stringify(err, null, 2));
-                    alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล: Unknown error");
+                    toast.error("เกิดข้อผิดพลาดในการบันทึกข้อมูล: Unknown error");
                   }
                 }
               }}
@@ -534,16 +539,16 @@ export default function AddEmployeeButton({ onEmployeeAdded }: AddEmployeeButton
                             
                             if (hasActiveInSameCompany) {
                               setCheckEmpResult(
-                                "พบรหัสนี้ในสัญญาที่ active อยู่ - ไม่สามารถใช้ได้"
+                                "ไม่สามารถใช้ได้"
                               );
                             } else {
                               setCheckEmpResult(
-                                "ไม่พบรหัสนี้ในสัญญาที่ active - สามารถใช้ได้"
+                                "สามารถใช้ได้"
                               );
                             }
                           } else {
                             setCheckEmpResult(
-                              "ไม่พบรหัสนี้ในสัญญาที่ active - สามารถใช้ได้"
+                              "สามารถใช้ได้"
                             );
                           }
                         } catch (error) {
@@ -560,7 +565,7 @@ export default function AddEmployeeButton({ onEmployeeAdded }: AddEmployeeButton
                   {checkEmpResult && (
                     <div
                       className={
-                        checkEmpResult === "ไม่พบรหัสนี้ในสัญญาที่ active - สามารถใช้ได้"
+                        checkEmpResult === "สามารถใช้ได้"
                           ? "text-green-600 text-sm mt-1"
                           : "text-red-600 text-sm mt-1"
                       }

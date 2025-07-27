@@ -4,6 +4,8 @@ import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getEmployees, type Employee } from "./actions";
+import ResignButton from "@/components/employee/ChangeStatusButton";
+import ChangeStatusButton from "@/components/employee/ChangeStatusButton";
 
 interface EmployeeTableClientProps {
   initialEmployees: Employee[];
@@ -298,6 +300,15 @@ function EmployeeTableClient({
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
+                    อายุ
+                  </label>
+                  <p className="text-sm text-gray-900">
+                    {selectedEmployee.age ? `${selectedEmployee.age} ปี` : "-"}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     ตำแหน่งงาน
                   </label>
                   <p className="text-sm text-gray-900">
@@ -311,6 +322,33 @@ function EmployeeTableClient({
                   </label>
                   <p className="text-sm text-gray-900">
                     {formatDate(selectedEmployee.start_date)}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    อายุงาน
+                  </label>
+                  <p className="text-sm text-gray-900">
+                    {selectedEmployee.work_years &&
+                    typeof selectedEmployee.work_years === "object" &&
+                    (selectedEmployee.work_years.years ||
+                      selectedEmployee.work_years.months ||
+                      selectedEmployee.work_years.days) ? (
+                      <>
+                        {selectedEmployee.work_years.years
+                          ? `${selectedEmployee.work_years.years} ปี`
+                          : ""}
+                        {selectedEmployee.work_years.months
+                          ? ` ${selectedEmployee.work_years.months} เดือน`
+                          : ""}
+                        {selectedEmployee.work_years.days
+                          ? ` ${selectedEmployee.work_years.days} วัน`
+                          : ""}
+                      </>
+                    ) : (
+                      "-"
+                    )}
                   </p>
                 </div>
 
@@ -331,8 +369,22 @@ function EmployeeTableClient({
                     {selectedEmployee.company_name || "-"}
                   </p>
                 </div>
-              </div>
 
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    สถานะ
+                  </label>
+                  <p className="text-sm text-gray-900">
+                    {selectedEmployee.status_code || "-"}
+                  </p>
+                </div>
+              </div>
+              <div>
+                <ChangeStatusButton
+                  employeeId={selectedEmployee.employee_id}
+                  onStatusChange={() => setSelectedEmployee(null)}
+                />
+              </div>
               <div className="mt-6 flex justify-end">
                 <Button
                   variant="outline"

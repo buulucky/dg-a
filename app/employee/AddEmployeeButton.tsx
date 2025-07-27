@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -219,6 +219,17 @@ export default function AddEmployeeButton({ onEmployeeAdded }: { onEmployeeAdded
     }
   };
 
+  // ตรวจสอบเลขบัตรประชาชนอัตโนมัติเมื่อครบ 13 หลัก (และเป็นตัวเลขเท่านั้น)
+  useEffect(() => {
+    if (personalId.length === 13 && !checking) {
+      checkPersonalId();
+    } else if (personalId.length < 13) {
+      setCheckResult(null);
+      setCanProceed(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [personalId]);
+
   return (
     <>
       <Button variant="default" onClick={() => setOpen(true)}>
@@ -338,18 +349,11 @@ export default function AddEmployeeButton({ onEmployeeAdded }: { onEmployeeAdded
                     required
                     value={personalId}
                     onChange={(e) => {
-                      setPersonalId(e.target.value);
+                      const value = e.target.value.replace(/[^0-9]/g, "");
+                      setPersonalId(value);
                       setCheckResult(null);
                     }}
                   />
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    disabled={personalId.length !== 13 || checking}
-                    onClick={checkPersonalId}
-                  >
-                    {checking ? "กำลังตรวจสอบ..." : "ตรวจสอบ"}
-                  </Button>
                 </div>
                 {checkResult && (
                   <div

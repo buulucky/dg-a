@@ -13,10 +13,17 @@ export interface Employee {
   first_name_en: string;
   last_name_en: string;
   birth_date: string | null;
+  age?: number | null;
   start_date: string | null;
+  work_years?: {
+    years?: number;
+    months?: number;
+    days?: number;
+  } | null;
   po_number: string | null;
   job_position_name: string | null;
   company_name: string | null;
+  status_code?: string | null;
 }
 
 export async function getEmployees(

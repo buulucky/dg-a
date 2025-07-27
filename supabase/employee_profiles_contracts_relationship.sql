@@ -14,7 +14,12 @@ SELECT
   e.birth_date,
   EXTRACT(YEAR FROM age(e.birth_date)) AS age,
   ec.start_date,
-  EXTRACT(YEAR FROM age(ec.start_date)) AS work_years,
+  -- คำนวณอายุงานเป็น json: { years, months, days }
+  json_build_object(
+    'years', EXTRACT(YEAR FROM age(current_date, ec.start_date)),
+    'months', EXTRACT(MONTH FROM age(current_date, ec.start_date)),
+    'days', EXTRACT(DAY FROM age(current_date, ec.start_date))
+  ) AS work_years,
   po.po_number,
   jp.job_position_name,
   est.status_code

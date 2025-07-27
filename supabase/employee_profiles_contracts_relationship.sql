@@ -1,8 +1,8 @@
 CREATE OR REPLACE VIEW v_employee_profiles_with_contracts AS
 SELECT
-  ep.employee_id,
-  ep.employee_code,
-  ep.company_id,
+  ec.employee_id,
+  ec.employee_code,
+  p.company_id,
   c.company_name,
   e.personal_id,
   e.prefix_th,
@@ -23,10 +23,10 @@ SELECT
   po.po_number,
   jp.job_position_name,
   est.status_code
-FROM employee_profiles ep
-LEFT JOIN companies c ON ep.company_id = c.company_id
-LEFT JOIN employees e ON ep.employee_id = e.employee_id
-LEFT JOIN employee_contracts ec ON ep.employee_id = ec.employee_id
+FROM employee_contracts ec
+LEFT JOIN po p ON ec.po_id = p.po_id
+LEFT JOIN companies c ON p.company_id = c.company_id
+LEFT JOIN employees e ON ec.employee_id = e.employee_id
 LEFT JOIN po ON ec.po_id = po.po_id
 LEFT JOIN job_positions jp ON po.job_position_id = jp.job_position_id
 LEFT JOIN employee_status_types est ON ec.status_id = est.status_id;

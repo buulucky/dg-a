@@ -47,7 +47,7 @@ export default function AddEmployeeButton({ onEmployeeAdded }: AddEmployeeButton
     selectedPoId.length > 0;
 
   // Helper to check if employeeId has been checked and is available
-  const isEmpIdChecked = checkEmpResult === "ไม่พบรหัสนี้ในระบบ - สามารถใช้ได้";
+  const isEmpIdChecked = checkEmpResult === "ไม่พบรหัสนี้ในสัญญาที่ active - สามารถใช้ได้";
 
   // Helper to check if there are any errors
   const hasError =
@@ -297,21 +297,12 @@ export default function AddEmployeeButton({ onEmployeeAdded }: AddEmployeeButton
                     if (insertError) throw insertError;
                     employeeIdToUse = insertEmp.employee_id;
                   }
-                  // Always insert employee_code into employee_profiles
-                  const { error: profileError } = await supabase
-                    .from("employee_profiles")
-                    .insert({
-                      employee_id: employeeIdToUse,
-                      company_id: user?.company_id, // เพิ่ม company_id จาก user
-                      employee_code: employeeId,
-                    });
-                  if (profileError) throw profileError;
-
-                  // บันทึกข้อมูลสัญญาลง employee_contracts
+                  // บันทึกข้อมูลสัญญาลง employee_contracts พร้อม employee_code
                   const { error: contractError } = await supabase
                     .from("employee_contracts")
                     .insert({
                       employee_id: employeeIdToUse,
+                      employee_code: employeeId, // เพิ่ม employee_code ลงในสัญญา
                       po_id: selectedPoId,
                       status_id: 1, // เพิ่ม status_id (1 = active)
                       start_date: formData.start_date,
@@ -512,23 +503,47 @@ export default function AddEmployeeButton({ onEmployeeAdded }: AddEmployeeButton
                         try {
                           const supabase = createClient();
 
-                          // ตรวจสอบว่ามี employee_code ซ้ำใน employee_profiles หรือไม่
-                          const { data: existingProfile, error } =
+                          // ตรวจสอบว่ามี employee_code ซ้ำใน employee_contracts ที่มีสัญญา active หรือไม่
+                          const { data: existingContracts, error } =
                             await supabase
-                              .from("employee_profiles")
-                              .select("employee_code")
+                              .from("employee_contracts")
+                              .select("employee_code, employee_id, po_id")
                               .eq("employee_code", employeeId)
-                              .single();
+                              .is("end_date", null); // เฉพาะสัญญาที่ active
+
                           if (error && error.code !== "PGRST116") {
                             throw error;
                           }
-                          if (existingProfile) {
-                            setCheckEmpResult(
-                              "พบรหัสนี้ในระบบแล้ว - ไม่สามารถใช้ได้"
-                            );
+                          
+                          if (existingContracts && existingContracts.length > 0) {
+                            // ตรวจสอบว่าเป็นสัญญาของบริษัทเดียวกันหรือไม่
+                            let hasActiveInSameCompany = false;
+                            
+                            for (const contract of existingContracts) {
+                              const { data: po } = await supabase
+                                .from("po")
+                                .select("company_id")
+                                .eq("po_id", contract.po_id)
+                                .single();
+                                
+                              if (po && po.company_id === user?.company_id) {
+                                hasActiveInSameCompany = true;
+                                break;
+                              }
+                            }
+                            
+                            if (hasActiveInSameCompany) {
+                              setCheckEmpResult(
+                                "พบรหัสนี้ในสัญญาที่ active อยู่ - ไม่สามารถใช้ได้"
+                              );
+                            } else {
+                              setCheckEmpResult(
+                                "ไม่พบรหัสนี้ในสัญญาที่ active - สามารถใช้ได้"
+                              );
+                            }
                           } else {
                             setCheckEmpResult(
-                              "ไม่พบรหัสนี้ในระบบ - สามารถใช้ได้"
+                              "ไม่พบรหัสนี้ในสัญญาที่ active - สามารถใช้ได้"
                             );
                           }
                         } catch (error) {
@@ -545,7 +560,7 @@ export default function AddEmployeeButton({ onEmployeeAdded }: AddEmployeeButton
                   {checkEmpResult && (
                     <div
                       className={
-                        checkEmpResult === "ไม่พบรหัสนี้ในระบบ - สามารถใช้ได้"
+                        checkEmpResult === "ไม่พบรหัสนี้ในสัญญาที่ active - สามารถใช้ได้"
                           ? "text-green-600 text-sm mt-1"
                           : "text-red-600 text-sm mt-1"
                       }

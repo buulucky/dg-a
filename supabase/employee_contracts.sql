@@ -3,6 +3,7 @@ CREATE TABLE employee_contracts (
   employee_id INT NOT NULL REFERENCES employees(employee_id),
   po_id INT NOT NULL REFERENCES po(po_id),
   status_id INT NOT NULL REFERENCES employee_status_types(status_id),
+  employee_code VARCHAR(50) NOT NULL,
   start_date DATE,
   end_date DATE,
   created_at TIMESTAMP DEFAULT NOW(),

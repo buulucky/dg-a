@@ -18,7 +18,16 @@ export interface Employee {
   job_position_name: string;
 }
 
-export async function getEmployees(): Promise<{ data: Employee[] | null; error: string | null }> {
+export async function getEmployees(
+  page: number = 1,
+  limit: number = 15,
+  search: string = ""
+): Promise<{ 
+  data: Employee[] | null; 
+  error: string | null; 
+  total: number;
+  totalPages: number;
+}> {
   try {
     const supabase = await createClient();
     
@@ -26,7 +35,7 @@ export async function getEmployees(): Promise<{ data: Employee[] | null; error: 
     const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
     
     if (authError || !authUser) {
-      return { data: null, error: "ไม่พบผู้ใช้ที่ล็อกอิน" };
+      return { data: null, error: "ไม่พบผู้ใช้ที่ล็อกอิน", total: 0, totalPages: 0 };
     }
 
     // ดึงข้อมูล user profile
@@ -37,31 +46,61 @@ export async function getEmployees(): Promise<{ data: Employee[] | null; error: 
       .single();
 
     if (profileError || !userProfile) {
-      return { data: null, error: "ไม่พบข้อมูล user profile" };
+      return { data: null, error: "ไม่พบข้อมูล user profile", total: 0, totalPages: 0 };
     }
 
-    // Query ข้อมูลพนักงาน
-    let query = supabase
+    // สร้าง query สำหรับนับจำนวนทั้งหมด
+    let countQuery = supabase
+      .from('v_employee_profiles_with_contracts')
+      .select('*', { count: 'exact', head: true });
+
+    // สร้าง query สำหรับดึงข้อมูล
+    let dataQuery = supabase
       .from('v_employee_profiles_with_contracts')
       .select('*');
 
     // ถ้าไม่ใช่ admin ให้ filter ตาม company_id
     if (userProfile.role !== 'admin') {
-      query = query.eq('company_id', userProfile.company_id);
+      countQuery = countQuery.eq('company_id', userProfile.company_id);
+      dataQuery = dataQuery.eq('company_id', userProfile.company_id);
     }
 
-    const { data, error } = await query;
+    // เพิ่มการค้นหา
+    if (search.trim()) {
+      const searchCondition = `personal_id.ilike.%${search}%,first_name_th.ilike.%${search}%,last_name_th.ilike.%${search}%,first_name_en.ilike.%${search}%,last_name_en.ilike.%${search}%,employee_code.ilike.%${search}%,job_position_name.ilike.%${search}%`;
+      countQuery = countQuery.or(searchCondition);
+      dataQuery = dataQuery.or(searchCondition);
+    }
+
+    // ดึงจำนวนทั้งหมดก่อน
+    const { count, error: countError } = await countQuery;
+    
+    if (countError) {
+      console.error("Error counting employees:", countError);
+      return { data: null, error: countError.message || "เกิดข้อผิดพลาดในการนับข้อมูล", total: 0, totalPages: 0 };
+    }
+
+    const total = count || 0;
+    const totalPages = Math.ceil(total / limit);
+
+    // คำนวณ offset สำหรับ pagination
+    const offset = (page - 1) * limit;
+
+    // ดึงข้อมูลพร้อม pagination
+    const { data, error } = await dataQuery
+      .order('employee_id', { ascending: true })
+      .range(offset, offset + limit - 1);
 
     if (error) {
       console.error("Error loading employees:", error);
-      return { data: null, error: error.message || "เกิดข้อผิดพลาดในการโหลดข้อมูล" };
+      return { data: null, error: error.message || "เกิดข้อผิดพลาดในการโหลดข้อมูล", total: 0, totalPages: 0 };
     }
 
-    return { data: data || [], error: null };
+    return { data: data || [], error: null, total, totalPages };
     
   } catch (error) {
     console.error("Server action error:", error);
-    return { data: null, error: "เกิดข้อผิดพลาดในการดึงข้อมูล" };
+    return { data: null, error: "เกิดข้อผิดพลาดในการดึงข้อมูล", total: 0, totalPages: 0 };
   }
 }
 

@@ -10,117 +10,23 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { type UserProfile } from "./actions";
 
-interface UserProfile {
-  id: string;
-  email: string;
-  full_name: string;
-  role: 'user' | 'admin';
-  status: 'pending' | 'approved' | 'rejected';
-  created_at: string;
-  approved_at?: string;
+interface AdminPanelClientProps {
+  initialUsers: UserProfile[];
+  currentUser: UserProfile;
 }
 
-export function AdminPanel() {
-  const [users, setUsers] = useState<UserProfile[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
+export function AdminPanelClient({ initialUsers, currentUser }: AdminPanelClientProps) {
+  const [users, setUsers] = useState<UserProfile[]>(initialUsers);
   const [processingId, setProcessingId] = useState<string | null>(null);
-  const router = useRouter();
   const supabase = createClient();
 
-  useEffect(() => {
-    const loadUsers = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('user_profiles')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
-        setUsers(data || []);
-      } catch (error) {
-        console.error('Error loading users:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    const checkAuthAndLoadUsers = async () => {
-      try {
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        
-        if (authError || !user) {
-          router.push('/auth/login');
-          return;
-        }
-
-        // ตรวจสอบว่าเป็น admin หรือไม่
-        const { data: profile, error: profileError } = await supabase
-          .from('user_profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-
-        if (profileError || !profile || profile.role !== 'admin' || profile.status !== 'approved') {
-          router.push('/protected');
-          return;
-        }
-
-        setCurrentUser(profile);
-        await loadUsers();
-      } catch (error) {
-        console.error('Error checking auth:', error);
-        router.push('/auth/login');
-      }
-    };
-
-    checkAuthAndLoadUsers();
-    
-    // Listen สำหรับ auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_OUT') {
-        // ไม่ต้อง redirect ที่นี่ เพราะ AuthButton จะจัดการให้แล้ว
-        setCurrentUser(null);
-        setUsers([]);
-      }
-    });
-
-    return () => {
-      subscription?.unsubscribe();
-    };
-  }, [router, supabase]); // แก้ไข dependency array
-
-  const loadUsers = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setUsers(data || []);
-    } catch (error) {
-      console.error('Error loading users:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  type UpdateData = {
-    status: 'approved' | 'rejected';
-    approved_by: string;
-    approved_at: string;
-  };
-
   const updateUserStatus = async (userId: string, status: 'approved' | 'rejected') => {
-    if (!currentUser) return;
-
     setProcessingId(userId);
     try {
-      const updateData: UpdateData = {
+      const updateData = {
         status,
         approved_by: currentUser.id,
         approved_at: new Date().toISOString()
@@ -133,18 +39,27 @@ export function AdminPanel() {
 
       if (error) throw error;
 
-      await loadUsers();
+      // อัปเดต state
+      setUsers(users.map(user => 
+        user.id === userId 
+          ? { 
+              ...user, 
+              status, 
+              approved_at: new Date().toISOString()
+            }
+          : user
+      ));
+
+      alert(`อัปเดตสถานะผู้ใช้เป็น ${status === 'approved' ? 'อนุมัติ' : 'ปฏิเสธ'} เรียบร้อยแล้ว`);
     } catch (error) {
       console.error('Error updating user status:', error);
-      alert('เกิดข้อผิดพลาดในการอัพเดทสถานะ');
+      alert('เกิดข้อผิดพลาดในการอัปเดตสถานะผู้ใช้');
     } finally {
       setProcessingId(null);
     }
   };
 
   const updateUserRole = async (userId: string, role: 'user' | 'admin') => {
-    if (!currentUser) return;
-
     setProcessingId(userId);
     try {
       const { error } = await supabase
@@ -154,10 +69,15 @@ export function AdminPanel() {
 
       if (error) throw error;
 
-      await loadUsers();
+      // อัปเดต state
+      setUsers(users.map(user => 
+        user.id === userId ? { ...user, role } : user
+      ));
+
+      alert(`อัปเดตบทบาทผู้ใช้เป็น ${role === 'admin' ? 'Admin' : 'User'} เรียบร้อยแล้ว`);
     } catch (error) {
       console.error('Error updating user role:', error);
-      alert('เกิดข้อผิดพลาดในการอัพเดทบทบาท');
+      alert('เกิดข้อผิดพลาดในการอัปเดตบทบาทผู้ใช้');
     } finally {
       setProcessingId(null);
     }
@@ -186,21 +106,6 @@ export function AdminPanel() {
         return <Badge variant="outline">{role}</Badge>;
     }
   };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
-          <p>กำลังโหลด...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!currentUser) {
-    return null;
-  }
 
   const pendingUsers = users.filter(user => user.status === 'pending');
   const approvedUsers = users.filter(user => user.status === 'approved');

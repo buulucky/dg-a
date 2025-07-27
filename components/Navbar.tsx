@@ -24,21 +24,15 @@ export default function Navbar() {
             {user?.role === "admin" && user?.status === "approved" && (
               <>
                 <Link
-                  href="/admin/companies"
+                  href="#"
                   className="hover:text-purple-200 transition"
                 >
-                  จัดการบริษัท
-                </Link>
-                <Link
-                  href="/admin/user-management"
-                  className="hover:text-purple-200 transition"
-                >
-                  จัดการสมาชิก
+                  #
                 </Link>
               </>
             )}
             <Link href="/employee" className="hover:text-purple-200 transition">
-              Employee
+              พนักงาน
             </Link>
           </div>
           <div>

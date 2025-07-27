@@ -3,8 +3,7 @@
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { getEmployees, type Employee } from "./actions";
-import ResignButton from "@/components/employee/ChangeStatusButton";
+import { getEmployees, type Employee } from "../../app/employee/actions";
 import ChangeStatusButton from "@/components/employee/ChangeStatusButton";
 
 interface EmployeeTableClientProps {
@@ -379,13 +378,12 @@ function EmployeeTableClient({
                   </p>
                 </div>
               </div>
-              <div>
+              
+              <div className="mt-6 flex justify-between items-center">
                 <ChangeStatusButton
                   employeeId={selectedEmployee.employee_id}
                   onStatusChange={() => setSelectedEmployee(null)}
                 />
-              </div>
-              <div className="mt-6 flex justify-end">
                 <Button
                   variant="outline"
                   onClick={() => setSelectedEmployee(null)}
@@ -393,6 +391,7 @@ function EmployeeTableClient({
                   ปิด
                 </Button>
               </div>
+
             </div>
           </div>
         </div>

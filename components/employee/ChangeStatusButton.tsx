@@ -61,8 +61,8 @@ export default function ChangeStatusButton({ employeeId, onStatusChange }: Chang
       setSuccess(true);
       setShowModal(false);
       if (onStatusChange) onStatusChange(status, reason, date);
-    } catch (e: any) {
-      setError(e.message || "เกิดข้อผิดพลาด");
+    } catch (e) {
+      setError((e instanceof Error && e.message) ? e.message : "เกิดข้อผิดพลาด");
     } finally {
       setLoading(false);
     }

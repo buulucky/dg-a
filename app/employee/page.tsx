@@ -1,8 +1,7 @@
-import AddEmployeeButton from "./AddEmployeeButton";
-import EmployeeTableClient from "./EmployeeTableClient";
+import AddEmployeeButton from "../../components/employee/AddEmployeeButton";
+import EmployeeTableClient from "../../components/employee/EmployeeTableClient";
 import { getEmployees, getUserRole } from "./actions";
 
-// บอก Next.js ว่าหน้านี้ต้อง dynamic rendering
 export const dynamic = 'force-dynamic';
 
 export default async function EmployeePage() {
@@ -19,11 +18,11 @@ export default async function EmployeePage() {
   return (
     <main className="p-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold mb-4">จัดการพนักงาน</h1>
-        {/* แสดงปุ่มเพิ่มพนักงานเฉพาะ user ที่ไม่ใช่ admin */}
+
         {!isAdmin && (
           <AddEmployeeButton />
         )}
+
       </div>
       <div className="mt-6">
         <h2 className="text-xl font-semibold mb-4">รายชื่อพนักงาน</h2>

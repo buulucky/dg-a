@@ -1,4 +1,3 @@
-import AddPOButton from "@/components/po/AddPOButton";
 import POTableClient from "../../../components/po/POTableClient";
 import { getPOs, getUserRole } from "./actions";
 
@@ -21,7 +20,6 @@ export default async function PoManagement() {
         <h1 className="text-2xl font-bold text-gray-900">จัดการ Purchase Order (PO)</h1>
         <p className="text-gray-600 mt-2">จัดการข้อมูล Purchase Order และติดตามสถานะ</p>
       </div>
-      <AddPOButton />
       <div className="mt-6">
         <POTableClient 
           initialPOs={pos}

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getPOs, type PO } from "../../app/admin/po-management/actions";
 import { toast } from "@/lib/toast";
+import AddPOButton from "./AddPOButton";
 
 // เพิ่ม keyframes สำหรับ animation
 const modalStyles = `
@@ -88,6 +89,12 @@ function POTableClient({
     }
   };
 
+  const handleRefresh = () => {
+    startTransition(() => {
+      loadPOs(currentPage, searchQuery);
+    });
+  };
+
   return (
     <>
       {/* เพิ่ม CSS animation */}
@@ -97,9 +104,7 @@ function POTableClient({
         {/* Add PO Button */}
         {showAddButton && (
           <div className="mb-6">
-            <Button>
-              + เพิ่ม PO ใหม่
-            </Button>
+            <AddPOButton onPOAdded={handleRefresh} />
           </div>
         )}
 

@@ -23,52 +23,135 @@ interface AddPOButtonProps {
   onPOAdded?: () => void;
 }
 
+// Corrected types for job positions and companies
+interface JobPosition {
+  job_position_id: string;
+  job_positions: {
+    job_position_name: string;
+  }[]; // Adjusted to match array structure
+}
+
+interface Company {
+  company_id: string;
+  companies: {
+    company_name: string;
+  }[]; // Adjusted to match array structure
+}
+
 export default function AddPOButton({ onPOAdded }: AddPOButtonProps) {
   const [open, setOpen] = useState(false);
   const [poNumber, setPONumber] = useState("");
-  const [companyName, setCompanyName] = useState("");
-  const [jobPosition, setJobPosition] = useState("");
+  const [selectedFunctionId, setSelectedFunctionId] = useState("");
+  const [selectedJobPositionId, setSelectedJobPositionId] = useState("");
+  const [selectedCompanyId, setSelectedCompanyId] = useState("");
+  const [contractStartDate, setContractStartDate] = useState("");
+  const [contractEndDate, setContractEndDate] = useState("");
+  const [quantity, setQuantity] = useState("");
+  const [paymentType, setPaymentType] = useState("");
   const [loading, setLoading] = useState(false);
-  const [companies, setCompanies] = useState<{ company_id: string; company_name: string }[]>([]);
+  const [functions, setFunctions] = useState<{ function_id: string; function_code: string }[]>([]);
   const [jobPositions, setJobPositions] = useState<{ job_position_id: string; job_position_name: string }[]>([]);
-  const [loadingCompanies, setLoadingCompanies] = useState(false);
+  const [companies, setCompanies] = useState<{ company_id: string; company_name: string }[]>([]);
+  const [loadingFunctions, setLoadingFunctions] = useState(false);
   const [loadingJobPositions, setLoadingJobPositions] = useState(false);
+  const [loadingCompanies, setLoadingCompanies] = useState(false);
 
   useEffect(() => {
-    const fetchCompanies = async () => {
-      setLoadingCompanies(true);
+    const fetchFunctions = async () => {
+      setLoadingFunctions(true);
       const supabase = createClient();
-      const { data, error } = await supabase.from("companies").select("company_id, company_name");
+      const { data, error } = await supabase.from("functions").select("function_id, function_code");
 
-      setLoadingCompanies(false);
+      setLoadingFunctions(false);
 
       if (error) {
-        toast.error("เกิดข้อผิดพลาดในการโหลดข้อมูลบริษัท: " + error.message);
+        toast.error("เกิดข้อผิดพลาดในการโหลดข้อมูลฟังก์ชัน: " + error.message);
       } else {
-        setCompanies(data || []);
+        setFunctions(data || []);
       }
     };
 
+    fetchFunctions();
+  }, []);
+
+  // ดึงตำแหน่งงานเมื่อเลือกฟังก์ชัน
+  useEffect(() => {
     const fetchJobPositions = async () => {
+      if (!selectedFunctionId) {
+        setJobPositions([]);
+        setSelectedJobPositionId("");
+        setSelectedCompanyId("");
+        return;
+      }
+
       setLoadingJobPositions(true);
       const supabase = createClient();
-      const { data, error } = await supabase.from("job_positions").select("job_position_id, job_position_name");
+      const { data, error } = await supabase
+        .from("function_positions")
+        .select(`
+          job_position_id,
+          job_positions!inner(job_position_name)
+        `)
+        .eq("function_id", selectedFunctionId);
 
       setLoadingJobPositions(false);
 
       if (error) {
         toast.error("เกิดข้อผิดพลาดในการโหลดข้อมูลตำแหน่งงาน: " + error.message);
       } else {
-        setJobPositions(data || []);
+        const formattedData = data?.map((item: JobPosition) => ({
+          job_position_id: item.job_position_id,
+          job_position_name: item.job_positions[0]?.job_position_name || "", // Access first element
+        })) || [];
+        setJobPositions(formattedData);
+        setSelectedJobPositionId("");
+        setSelectedCompanyId("");
+      }
+    };
+
+    fetchJobPositions();
+  }, [selectedFunctionId]);
+
+  // ดึงบริษัทเมื่อเลือกฟังก์ชันและตำแหน่งงาน
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      if (!selectedFunctionId || !selectedJobPositionId) {
+        setCompanies([]);
+        setSelectedCompanyId("");
+        return;
+      }
+
+      setLoadingCompanies(true);
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("function_position_companies")
+        .select(`
+          company_id,
+          companies!inner(company_name)
+        `)
+        .eq("function_id", selectedFunctionId)
+        .eq("job_position_id", selectedJobPositionId);
+
+      setLoadingCompanies(false);
+
+      if (error) {
+        toast.error("เกิดข้อผิดพลาดในการโหลดข้อมูลบริษัท: " + error.message);
+      } else {
+        const formattedData = data?.map((item: Company) => ({
+          company_id: item.company_id,
+          company_name: item.companies[0]?.company_name || "", // Access first element
+        })) || [];
+        setCompanies(formattedData);
+        setSelectedCompanyId("");
       }
     };
 
     fetchCompanies();
-    fetchJobPositions();
-  }, []);
+  }, [selectedFunctionId, selectedJobPositionId]);
 
   const handleAddPO = async () => {
-    if (!poNumber || !companyName || !jobPosition) {
+    if (!poNumber || !selectedFunctionId || !selectedJobPositionId || !selectedCompanyId || 
+        !contractStartDate || !contractEndDate || !quantity || !paymentType) {
       toast.error("กรุณากรอกข้อมูลให้ครบถ้วน");
       return;
     }
@@ -76,10 +159,34 @@ export default function AddPOButton({ onPOAdded }: AddPOButtonProps) {
     setLoading(true);
     const supabase = createClient();
 
-    const { error } = await supabase.from("purchase_orders").insert({
+    // ตรวจสอบว่าเลข PO ซ้ำหรือไม่
+    const { data: existingPO, error: checkError } = await supabase
+      .from("po")
+      .select("po_number")
+      .eq("po_number", poNumber)
+      .single();
+
+    if (checkError && checkError.code !== "PGRST116") { // PGRST116: No rows found
+      setLoading(false);
+      toast.error("เกิดข้อผิดพลาดในการตรวจสอบเลข PO: " + checkError.message);
+      return;
+    }
+
+    if (existingPO) {
+      setLoading(false);
+      toast.error("เลข PO นี้มีอยู่ในระบบแล้ว");
+      return;
+    }
+
+    const { error } = await supabase.from("po").insert({
       po_number: poNumber,
-      company_name: companyName,
-      job_position: jobPosition,
+      function_id: selectedFunctionId,
+      job_position_id: selectedJobPositionId,
+      company_id: selectedCompanyId,
+      start_date: contractStartDate,
+      end_date: contractEndDate,
+      employee_count: parseInt(quantity),
+      po_type: paymentType,
     });
 
     setLoading(false);
@@ -90,8 +197,13 @@ export default function AddPOButton({ onPOAdded }: AddPOButtonProps) {
       toast.success("เพิ่ม PO สำเร็จ");
       setOpen(false);
       setPONumber("");
-      setCompanyName("");
-      setJobPosition("");
+      setSelectedFunctionId("");
+      setSelectedJobPositionId("");
+      setSelectedCompanyId("");
+      setContractStartDate("");
+      setContractEndDate("");
+      setQuantity("");
+      setPaymentType("");
       if (onPOAdded) onPOAdded();
     }
   };
@@ -121,20 +233,20 @@ export default function AddPOButton({ onPOAdded }: AddPOButtonProps) {
                 />
               </div>
               <div>
-                <Label htmlFor="companyName">ชื่อบริษัท</Label>
+                <Label htmlFor="function">ฟังก์ชัน</Label>
                 <select
-                  id="companyName"
-                  value={companyName}
-                  onChange={(e) => setCompanyName(e.target.value)}
+                  id="function"
+                  value={selectedFunctionId}
+                  onChange={(e) => setSelectedFunctionId(e.target.value)}
                   className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 >
-                  <option value="">เลือกบริษัท</option>
-                  {loadingCompanies ? (
+                  <option value="">เลือกฟังก์ชัน</option>
+                  {loadingFunctions ? (
                     <option disabled>กำลังโหลด...</option>
                   ) : (
-                    companies.map((company) => (
-                      <option key={company.company_id} value={company.company_name}>
-                        {company.company_name}
+                    functions.map((func) => (
+                      <option key={func.function_id} value={func.function_id}>
+                        {func.function_code}
                       </option>
                     ))
                   )}
@@ -144,22 +256,87 @@ export default function AddPOButton({ onPOAdded }: AddPOButtonProps) {
                 <Label htmlFor="jobPosition">ตำแหน่งงาน</Label>
                 <select
                   id="jobPosition"
-                  value={jobPosition}
-                  onChange={(e) => setJobPosition(e.target.value)}
+                  value={selectedJobPositionId}
+                  onChange={(e) => setSelectedJobPositionId(e.target.value)}
                   className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  disabled={!selectedFunctionId}
                 >
                   <option value="">เลือกตำแหน่งงาน</option>
                   {loadingJobPositions ? (
                     <option disabled>กำลังโหลด...</option>
                   ) : (
                     jobPositions.map((position) => (
-                      <option key={position.job_position_id} value={position.job_position_name}>
+                      <option key={position.job_position_id} value={position.job_position_id}>
                         {position.job_position_name}
                       </option>
                     ))
                   )}
                 </select>
               </div>
+              <div>
+                <Label htmlFor="companyName">บริษัท</Label>
+                <select
+                  id="companyName"
+                  value={selectedCompanyId}
+                  onChange={(e) => setSelectedCompanyId(e.target.value)}
+                  className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  disabled={!selectedFunctionId || !selectedJobPositionId}
+                >
+                  <option value="">เลือกบริษัท</option>
+                  {loadingCompanies ? (
+                    <option disabled>กำลังโหลด...</option>
+                  ) : (
+                    companies.map((company) => (
+                      <option key={company.company_id} value={company.company_id}>
+                        {company.company_name}
+                      </option>
+                    ))
+                  )}
+                </select>
+              </div>
+              <div>
+                <Label htmlFor="contractStartDate">วันเริ่มสัญญา</Label>
+                <Input
+                  id="contractStartDate"
+                  type="date"
+                  value={contractStartDate}
+                  onChange={(e) => setContractStartDate(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="contractEndDate">วันสิ้นสุดสัญญา</Label>
+                <Input
+                  id="contractEndDate"
+                  type="date"
+                  value={contractEndDate}
+                  onChange={(e) => setContractEndDate(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="quantity">จำนวน</Label>
+                <Input
+                  id="quantity"
+                  type="number"
+                  value={quantity}
+                  onChange={(e) => setQuantity(e.target.value)}
+                  placeholder="กรอกจำนวน"
+                  min="1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="paymentType">ประเภทการจ่าย</Label>
+                <select
+                  id="paymentType"
+                  value={paymentType}
+                  onChange={(e) => setPaymentType(e.target.value)}
+                  className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">เลือกประเภทการจ่าย</option>
+                  <option value="รายเดือน">รายเดือน</option>
+                  <option value="รายวัน">รายวัน</option>
+                </select>
+              </div>
+
             </div>
             <div className="flex justify-end space-x-3 mt-6">
               <Button variant="outline" onClick={() => setOpen(false)}>

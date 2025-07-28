@@ -1,39 +1,44 @@
 CREATE OR REPLACE VIEW view_employee_contracts_relationship AS
 WITH required_courses AS (
   SELECT
-    ec.employee_id,
+    po.po_id,
     pc.course_id
-  FROM employee_contracts ec
-  JOIN po ON ec.po_id = po.po_id
+  FROM po
   JOIN position_courses pc ON po.job_position_id = pc.job_position_id
 ),
 
-course_taken AS (
-  SELECT DISTINCT
+employee_courses_count AS (
+  SELECT
     employee_id,
     course_id
   FROM employee_course_records
 ),
 
-course_progress AS (
+employee_required_courses AS (
   SELECT
-    rc.employee_id,
-    COUNT(DISTINCT rc.course_id) AS total_required,
-    COUNT(DISTINCT ct.course_id) AS completed_courses
-  FROM required_courses rc
-  LEFT JOIN course_taken ct 
-    ON rc.employee_id = ct.employee_id AND rc.course_id = ct.course_id
-  GROUP BY rc.employee_id
+    ec.employee_id,
+    rc.course_id
+  FROM employee_contracts ec
+  JOIN required_courses rc ON ec.po_id = rc.po_id
 ),
 
-course_status_summary AS (
+employee_missing_courses AS (
   SELECT
-    cp.employee_id,
-    CASE 
-      WHEN cp.total_required = cp.completed_courses THEN 'All completed'
-      ELSE CONCAT(cp.total_required, '/', cp.completed_courses)
-    END AS course_progress_summary
-  FROM course_progress cp
+    erc.employee_id,
+    erc.course_id
+  FROM employee_required_courses erc
+  LEFT JOIN employee_courses_count ecc
+    ON erc.employee_id = ecc.employee_id AND erc.course_id = ecc.course_id
+  WHERE ecc.course_id IS NULL
+),
+
+employee_course_completion AS (
+  SELECT
+    ec.employee_id,
+    CASE WHEN COUNT(emc.course_id) = 0 THEN 'ครบ' ELSE 'ยังไม่ครบ' END AS course_completion_status
+  FROM employee_contracts ec
+  LEFT JOIN employee_missing_courses emc ON ec.employee_id = emc.employee_id
+  GROUP BY ec.employee_id
 )
 
 SELECT
@@ -59,7 +64,7 @@ SELECT
   po.po_number,
   jp.job_position_name,
   est.status_code,
-  COALESCE(css.course_progress_summary, '0/0') AS course_progress_summary
+  COALESCE(ecc.course_completion_status, 'ยังไม่ครบ') AS course_completion_status
 FROM employee_contracts ec
 LEFT JOIN po p ON ec.po_id = p.po_id
 LEFT JOIN companies c ON p.company_id = c.company_id
@@ -67,5 +72,4 @@ LEFT JOIN employees e ON ec.employee_id = e.employee_id
 LEFT JOIN po ON ec.po_id = po.po_id
 LEFT JOIN job_positions jp ON po.job_position_id = jp.job_position_id
 LEFT JOIN employee_status_types est ON ec.status_id = est.status_id
-LEFT JOIN course_status_summary css ON ec.employee_id = css.employee_id
-ORDER BY ec.employee_id;
+LEFT JOIN employee_course_completion ecc ON ec.employee_id = ecc.employee_id;

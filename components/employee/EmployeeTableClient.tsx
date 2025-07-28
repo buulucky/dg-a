@@ -155,6 +155,9 @@ function EmployeeTableClient({
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   วันที่เริ่มงาน
                 </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  สถานะอบรม
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -192,6 +195,9 @@ function EmployeeTableClient({
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
                       {formatDate(employee.start_date)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
+                      {employee.course_progress_summary || "-"}
                     </td>
                   </tr>
                 ))

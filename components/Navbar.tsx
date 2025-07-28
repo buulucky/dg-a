@@ -6,27 +6,38 @@ import { useState, useRef, useEffect } from "react";
 
 export default function Navbar() {
   const { user } = useUser();
-  const [showDropdown, setShowDropdown] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [showManageDropdown, setShowManageDropdown] = useState(false);
+  const [showReportDropdown, setShowReportDropdown] = useState(false);
+  const manageDropdownRef = useRef<HTMLDivElement>(null);
+  const reportDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
+      // ตรวจสอบว่าคลิกนอกพื้นที่ manage dropdown หรือไม่
       if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
+        showManageDropdown &&
+        manageDropdownRef.current &&
+        !manageDropdownRef.current.contains(event.target as Node)
       ) {
-        setShowDropdown(false);
+        setShowManageDropdown(false);
+      }
+      // ตรวจสอบว่าคลิกนอกพื้นที่ report dropdown หรือไม่
+      if (
+        showReportDropdown &&
+        reportDropdownRef.current &&
+        !reportDropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowReportDropdown(false);
       }
     }
-    if (showDropdown) {
-      document.addEventListener("mousedown", handleClickOutside);
-    } else {
-      document.removeEventListener("mousedown", handleClickOutside);
-    }
+    
+    // เพิ่ม event listener เฉพาะเมื่อมี dropdown เปิดอยู่
+    document.addEventListener("mousedown", handleClickOutside);
+    
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [showDropdown]);
+  }, [showManageDropdown, showReportDropdown]);
 
   return (
     <nav className="bg-purple-900 text-white shadow-md">
@@ -44,19 +55,22 @@ export default function Navbar() {
           {/* Links */}
           <div className="flex gap-6 items-center">
             <Link href="/employee" className="hover:text-purple-200 transition">
-              จัดการพนักงาน
+              ตารางพนักงาน
             </Link>
 
             {user?.role === "admin" && user?.status === "approved" && (
-              <div className="relative" ref={dropdownRef}>
+              <div className="relative" ref={manageDropdownRef}>
                 <button
                   className="hover:text-purple-200 transition flex items-center gap-1"
-                  onClick={() => setShowDropdown(!showDropdown)}
+                  onClick={() => {
+                    setShowManageDropdown(!showManageDropdown);
+                    setShowReportDropdown(false); // ปิด dropdown อื่น
+                  }}
                 >
-                  การจัดการ
+                  เมนูจัดการ
                   <svg
                     className={`w-4 h-4 transition-transform ${
-                      showDropdown ? "rotate-180" : ""
+                      showManageDropdown ? "rotate-180" : ""
                     }`}
                     fill="none"
                     stroke="currentColor"
@@ -71,35 +85,68 @@ export default function Navbar() {
                   </svg>
                 </button>
 
-                {showDropdown && (
-                  <div className="absolute top-full right-0 mt-1 bg-white text-gray-800 rounded-md shadow-lg min-w-[180px] z-50">
+                {showManageDropdown && (
+                  <div className="absolute top-full right-0 mt-1 bg-white text-gray-800 rounded-lg shadow-lg min-w-[180px] z-50">
                     <Link
-                      href="/admin"
-                      className="block px-4 py-2 hover:bg-purple-50 hover:text-purple-700 transition"
-                      onClick={() => setShowDropdown(false)}
-                    >
-                      แดชบอร์ดแอดมิน
-                    </Link>
-                    <Link
-                      href="/admin/users"
-                      className="block px-4 py-2 hover:bg-purple-50 hover:text-purple-700 transition"
-                      onClick={() => setShowDropdown(false)}
+                      href="/admin/user-management"
+                      className="block px-4 py-2 hover:bg-purple-50 hover:text-purple-700 transition first:rounded-t-lg"
+                      onClick={() => setShowManageDropdown(false)}
                     >
                       จัดการผู้ใช้
                     </Link>
                     <Link
-                      href="/admin/companies"
-                      className="block px-4 py-2 hover:bg-purple-50 hover:text-purple-700 transition"
-                      onClick={() => setShowDropdown(false)}
+                      href="/admin/po-management"
+                      className="block px-4 py-2 hover:bg-purple-50 hover:text-purple-700 transition last:rounded-b-lg"
+                      onClick={() => setShowManageDropdown(false)}
                     >
-                      จัดการบริษัท
+                      จัดการ PO
+                    </Link>
+                  </div>
+                )}
+              </div>
+            )}
+            {user?.role === "admin" && user?.status === "approved" && (
+              <div className="relative" ref={reportDropdownRef}>
+                <button
+                  className="hover:text-purple-200 transition flex items-center gap-1"
+                  onClick={() => {
+                    setShowReportDropdown(!showReportDropdown);
+                    setShowManageDropdown(false); // ปิด dropdown อื่น
+                  }}
+                >
+                  รายงาน
+                  <svg
+                    className={`w-4 h-4 transition-transform ${
+                      showReportDropdown ? "rotate-180" : ""
+                    }`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </button>
+
+                {showReportDropdown && (
+                  <div className="absolute top-full right-0 mt-1 bg-white text-gray-800 rounded-lg shadow-lg min-w-[180px] z-50">
+                    <Link
+                      href="/admin/reports/employee"
+                      className="block px-4 py-2 hover:bg-purple-50 hover:text-purple-700 transition first:rounded-t-lg"
+                      onClick={() => setShowReportDropdown(false)}
+                    >
+                      รายงานพนักงาน
                     </Link>
                     <Link
-                      href="/admin/reports"
-                      className="block px-4 py-2 hover:bg-purple-50 hover:text-purple-700 transition"
-                      onClick={() => setShowDropdown(false)}
+                      href="/admin/reports/po"
+                      className="block px-4 py-2 hover:bg-purple-50 hover:text-purple-700 transition last:rounded-b-lg"
+                      onClick={() => setShowReportDropdown(false)}
                     >
-                      รายงาน
+                      รายงาน PO
                     </Link>
                   </div>
                 )}

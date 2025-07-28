@@ -1,3 +1,4 @@
+-- ตาราง employee_contracts สำหรับเก็บข้อมูลสัญญาจ้างพนักงาน
 CREATE TABLE employee_contracts (
   employee_contract_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   employee_id INT NOT NULL REFERENCES employees(employee_id),
@@ -10,20 +11,6 @@ CREATE TABLE employee_contracts (
   updated_at TIMESTAMP DEFAULT NOW(),
   note TEXT
 );
-
--- สร้าง Trigger สำหรับอัปเดต updated_at เมื่อมีการแก้ไขข้อมูล
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = now();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER set_updated_at_employee_contracts
-BEFORE UPDATE ON employee_contracts
-FOR EACH ROW
-EXECUTE FUNCTION update_updated_at_column();
 
 -- สร้าง Trigger เพื่อตรวจสอบไม่ให้มีสัญญาที่ Active ซ้ำกันสำหรับพนักงานเดียวกัน
 CREATE OR REPLACE FUNCTION prevent_duplicate_active_contracts()

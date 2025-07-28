@@ -1,4 +1,4 @@
-CREATE OR REPLACE VIEW v_employee_profiles_with_contracts AS
+CREATE OR REPLACE VIEW view_employee_contracts_relationship AS
 SELECT
   ec.employee_id,
   ec.employee_code,

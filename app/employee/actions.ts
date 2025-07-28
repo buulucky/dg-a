@@ -59,13 +59,13 @@ export async function getEmployees(
 
     // สร้าง query สำหรับนับจำนวนทั้งหมด
     let countQuery = supabase
-      .from('v_employee_profiles_with_contracts')
+      .from('view_employee_contracts_relationship')
       .select('*', { count: 'exact', head: true })
       .eq('status_code', 'ACTIVE'); // << เพิ่มตรงนี้
 
     // สร้าง query สำหรับดึงข้อมูล
     let dataQuery = supabase
-      .from('v_employee_profiles_with_contracts')
+      .from('view_employee_contracts_relationship')
       .select('*')
       .eq('status_code', 'ACTIVE'); // << เพิ่มตรงนี้
 

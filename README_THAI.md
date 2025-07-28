@@ -123,18 +123,3 @@ npm run dev
 ## License
 
 MIT License
-
-
-import { toast } from "@/lib/toast";
-
-// ใช้งานง่ายๆ
-toast.success("บันทึกข้อมูลสำเร็จ");
-toast.error("เกิดข้อผิดพลาด");
-toast.warning("คำเตือน");
-toast.info("ข้อมูลทั่วไป");
-
-// ปรับแต่งตำแหน่งและระยะเวลา
-toast.success("สำเร็จ!", { 
-  duration: 5000, 
-  position: 'top-center' 
-});

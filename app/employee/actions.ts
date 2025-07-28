@@ -24,6 +24,7 @@ export interface Employee {
   job_position_name: string | null;
   company_name: string | null;
   status_code?: string | null;
+  course_progress_summary?: string | null; // เพิ่มฟิลด์นี้
 }
 
 export async function getEmployees(

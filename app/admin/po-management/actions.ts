@@ -9,10 +9,10 @@ export interface PO {
   company_id: number;
   company_name: string;
   function_id: number;
-  function_code: string; // เปลี่ยนจาก function_name เป็น function_code
+  function_code: string;
   job_position_id: number;
   job_position_name: string;
-  employee_count: number; // เพิ่ม employee_count จาก view
+  employee_count: number;
   start_date: string;
   end_date: string;
   created_at: string;
@@ -90,8 +90,8 @@ export async function getPOs(page = 1, limit = 15, searchQuery = "") {
     return { data: [], total: 0, totalPages: 0, error: error.message };
   }
 
-  // แปลงข้อมูลให้อยู่ในรูปแบบที่ใช้งานง่าย
-  const formattedData: PO[] = (data || []).map((po: any) => ({
+  // Use the existing PO interface for type safety
+  const formattedData: PO[] = (data || []).map((po) => ({
     po_id: po.po_id,
     po_number: po.po_number || "",
     company_id: po.company_id,

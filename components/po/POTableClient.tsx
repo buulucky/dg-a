@@ -43,6 +43,8 @@ function POTableClient({
   const [searchQuery, setSearchQuery] = useState("");
   const [isPending, startTransition] = useTransition();
   const [selectedPO, setSelectedPO] = useState<PO | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const loadPOs = async (page: number, searchQuery: string) => {
     const result = await getPOs(page, 15, searchQuery);
@@ -93,6 +95,52 @@ function POTableClient({
     startTransition(() => {
       loadPOs(currentPage, searchQuery);
     });
+  };
+
+  const handleEdit = () => {
+    if (selectedPO) {
+      setIsEditModalOpen(true);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setSelectedPO(null);
+    setIsEditModalOpen(false);
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!selectedPO) return;
+
+    setIsSubmitting(true);
+    
+    try {
+      const formData = new FormData(e.currentTarget);
+      
+      // TODO: Implement the actual update logic here
+      // This would typically involve calling an API or action to update the PO
+      console.log("Updating PO with data:", {
+        po_id: selectedPO.po_id,
+        po_number: formData.get('po_number'),
+        employee_count: formData.get('employee_count'),
+        po_type: formData.get('po_type'),
+        start_date: formData.get('start_date'),
+        end_date: formData.get('end_date'),
+      });
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      toast.success("แก้ไขข้อมูล PO สำเร็จ");
+      handleCloseModal();
+      handleRefresh(); // Refresh the data
+      
+    } catch (error) {
+      console.error("Error updating PO:", error);
+      toast.error("เกิดข้อผิดพลาดในการแก้ไขข้อมูล PO");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -262,83 +310,232 @@ function POTableClient({
         )}
 
         {/* PO Detail Modal */}
-        {selectedPO && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+        {selectedPO && !isEditModalOpen && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div 
-              className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-              style={{ animation: 'modalFadeIn 0.2s ease-out' }}
+              className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto transform transition-all duration-300 ease-out scale-100"
+              style={{
+                animation: 'modalFadeIn 0.3s ease-out'
+              }}
             >
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">
+              <div className="p-8">
+                {/* Header */}
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-semibold text-gray-800">
                     รายละเอียด PO
-                  </h3>
+                  </h2>
                   <button
-                    onClick={() => setSelectedPO(null)}
-                    className="text-gray-400 hover:text-gray-600"
+                    onClick={handleCloseModal}
+                    className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors duration-200"
                   >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium text-gray-700">เลข PO</label>
+                      <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">{selectedPO.po_number || "-"}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium text-gray-700">บริษัท</label>
+                      <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">{selectedPO.company_name}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium text-gray-700">กลุ่มงาน</label>
+                      <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">{selectedPO.function_code}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium text-gray-700">ตำแหน่งงาน</label>
+                      <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">{selectedPO.job_position_name}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium text-gray-700">จำนวนพนักงาน</label>
+                      <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">{selectedPO.employee_count || 0} คน</p>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium text-gray-700">สัญญา</label>
+                      <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">{selectedPO.po_type || "-"}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium text-gray-700">วันที่เริ่มงาน</label>
+                      <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">{formatDate(selectedPO.start_date)}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium text-gray-700">วันที่สิ้นสุด</label>
+                      <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">{formatDate(selectedPO.end_date)}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium text-gray-700">สถานะ</label>
+                      <div className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">
+                        {selectedPO.start_date && selectedPO.end_date ? getStatusBadge(selectedPO.start_date, selectedPO.end_date) : "-"}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Footer */}
+                  <div className="pt-6 border-t border-gray-100">
+                    <div className="flex justify-end space-x-3">
+                      <Button
+                        variant="outline"
+                        onClick={handleCloseModal}
+                        className="px-6 py-2"
+                      >
+                        ปิด
+                      </Button>
+                      {isAdmin && (
+                        <Button 
+                          onClick={handleEdit}
+                        >
+                          แก้ไข
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Edit PO Modal */}
+        {selectedPO && isEditModalOpen && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div 
+              className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto transform transition-all duration-300 ease-out scale-100"
+              style={{
+                animation: 'modalFadeIn 0.3s ease-out'
+              }}
+            >
+              <div className="p-8">
+                {/* Header */}
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-semibold text-gray-800">
+                    แก้ไขข้อมูล PO
+                  </h2>
+                  <button
+                    onClick={handleCloseModal}
+                    className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors duration-200"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
                 </div>
                 
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
+                <form className="space-y-6" onSubmit={handleSaveEdit}>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-1">
                       <label className="block text-sm font-medium text-gray-700">เลข PO</label>
-                      <p className="mt-1 text-sm text-gray-900">{selectedPO.po_number || "-"}</p>
+                      <Input
+                        type="text"
+                        defaultValue={selectedPO.po_number || ""}
+                        placeholder="เลข PO"
+                        className="w-full"
+                        disabled
+                      />
                     </div>
-                    <div>
+                    <div className="space-y-1">
                       <label className="block text-sm font-medium text-gray-700">บริษัท</label>
-                      <p className="mt-1 text-sm text-gray-900">{selectedPO.company_name}</p>
+                      <Input
+                        type="text"
+                        defaultValue={selectedPO.company_name}
+                        placeholder="ชื่อบริษัท"
+                        className="w-full"
+                        disabled
+                      />
                     </div>
-                    <div>
+                    <div className="space-y-1">
                       <label className="block text-sm font-medium text-gray-700">กลุ่มงาน</label>
-                      <p className="mt-1 text-sm text-gray-900">{selectedPO.function_code}</p>
+                      <Input
+                        type="text"
+                        defaultValue={selectedPO.function_code}
+                        placeholder="กลุ่มงาน"
+                        className="w-full"
+                        disabled
+                      />
                     </div>
-                    <div>
+                    <div className="space-y-1">
                       <label className="block text-sm font-medium text-gray-700">ตำแหน่งงาน</label>
-                      <p className="mt-1 text-sm text-gray-900">{selectedPO.job_position_name}</p>
+                      <Input
+                        type="text"
+                        defaultValue={selectedPO.job_position_name}
+                        placeholder="ตำแหน่งงาน"
+                        className="w-full"
+                        disabled
+                      />
                     </div>
-                    <div>
+                    <div className="space-y-1">
                       <label className="block text-sm font-medium text-gray-700">จำนวนพนักงาน</label>
-                      <p className="mt-1 text-sm text-gray-900">{selectedPO.employee_count || 0} คน</p>
+                      <Input
+                        type="number"
+                        name="employee_count"
+                        defaultValue={selectedPO.employee_count || 0}
+                        placeholder="จำนวนพนักงาน"
+                        className="w-full"
+                        min="0"
+                      />
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">สัญญา</label>
-                      <p className="mt-1 text-sm text-gray-900">{selectedPO.po_type || "-"}</p>
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium text-gray-700">ประเภทสัญญา</label>
+                      <select 
+                        name="po_type"
+                        className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 p-2 border"
+                        defaultValue={selectedPO.po_type || ""}
+                      >
+                        <option value="">เลือกประเภทสัญญา</option>
+                        <option value="รายเดือน">รายเดือน</option>
+                        <option value="รายวัน">รายวัน</option>
+                      </select>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">สถานะ</label>
-                      <div className="mt-1">
-                        {selectedPO.start_date && selectedPO.end_date ? getStatusBadge(selectedPO.start_date, selectedPO.end_date) : "-"}
-                      </div>
-                    </div>
-                    <div>
+                    <div className="space-y-1">
                       <label className="block text-sm font-medium text-gray-700">วันที่เริ่มงาน</label>
-                      <p className="mt-1 text-sm text-gray-900">{formatDate(selectedPO.start_date)}</p>
+                      <Input
+                        type="date"
+                        name="start_date"
+                        defaultValue={selectedPO.start_date ? new Date(selectedPO.start_date).toISOString().split('T')[0] : ""}
+                        className="w-full"
+                      />
                     </div>
-                    <div>
+                    <div className="space-y-1">
                       <label className="block text-sm font-medium text-gray-700">วันที่สิ้นสุด</label>
-                      <p className="mt-1 text-sm text-gray-900">{formatDate(selectedPO.end_date)}</p>
+                      <Input
+                        type="date"
+                        name="end_date"
+                        defaultValue={selectedPO.end_date ? new Date(selectedPO.end_date).toISOString().split('T')[0] : ""}
+                        className="w-full"
+                      />
                     </div>
                   </div>
                   
-                  <div className="flex justify-end space-x-3 pt-4 border-t">
+                  {/* Footer */}
+                  <div className="flex justify-end space-x-3 pt-6 border-t border-gray-100">
                     <Button
+                      type="button"
                       variant="outline"
-                      onClick={() => setSelectedPO(null)}
+                      onClick={handleCloseModal}
+                      disabled={isSubmitting}
                     >
-                      ปิด
+                      ยกเลิก
                     </Button>
-                    {isAdmin && (
-                      <Button className="bg-blue-600 hover:bg-blue-700">
-                        แก้ไข
-                      </Button>
-                    )}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsEditModalOpen(false)}
+                      disabled={isSubmitting}
+                    >
+                      กลับไปดูรายละเอียด
+                    </Button>
+                    <Button 
+                      type="submit"
+                      className="bg-green-600 hover:bg-green-700"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? "กำลังบันทึก..." : "บันทึกการแก้ไข"}
+                    </Button>
                   </div>
-                </div>
+                </form>
               </div>
             </div>
           </div>

@@ -222,7 +222,7 @@ export default function AddPOButton({ onPOAdded }: AddPOButtonProps) {
       <Button onClick={() => setOpen(true)}>+ เพิ่ม PO ใหม่</Button>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+        <div className="fixed inset-0 z-50 flex items-center  backdrop-blur-sm  justify-center p-4 bg-black bg-opacity-50">
           <div
             className="bg-white rounded-lg shadow-xl max-w-md w-full p-6"
             style={{ animation: "modalFadeIn 0.2s ease-out" }}
@@ -246,7 +246,7 @@ export default function AddPOButton({ onPOAdded }: AddPOButtonProps) {
                   id="function"
                   value={selectedFunctionId}
                   onChange={(e) => setSelectedFunctionId(e.target.value)}
-                  className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 p-2 border"
                 >
                   <option value="">เลือกฟังก์ชัน</option>
                   {loadingFunctions ? (
@@ -266,7 +266,7 @@ export default function AddPOButton({ onPOAdded }: AddPOButtonProps) {
                   id="jobPosition"
                   value={selectedJobPositionId}
                   onChange={(e) => setSelectedJobPositionId(e.target.value)}
-                  className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 p-2 border"
                   disabled={!selectedFunctionId}
                 >
                   <option value="">เลือกตำแหน่งงาน</option>
@@ -287,7 +287,7 @@ export default function AddPOButton({ onPOAdded }: AddPOButtonProps) {
                   id="companyName"
                   value={selectedCompanyId}
                   onChange={(e) => setSelectedCompanyId(e.target.value)}
-                  className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 p-2 border"
                   disabled={!selectedFunctionId || !selectedJobPositionId}
                 >
                   <option value="">เลือกบริษัท</option>
@@ -332,15 +332,16 @@ export default function AddPOButton({ onPOAdded }: AddPOButtonProps) {
                 />
               </div>
               <div>
-                <Label htmlFor="paymentType">สัญญา</Label>
+                <Label htmlFor="paymentType">ประเภทสัญญา</Label>
                 <select
                   id="paymentType"
                   value={paymentType}
                   onChange={(e) => setPaymentType(e.target.value)}
-                  className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 p-2 border"
                 >
-                  <option value="รายวัน">รายวัน</option>
+                  <option value="">เลือกประเภทสัญญา</option>
                   <option value="รายเดือน">รายเดือน</option>
+                  <option value="รายวัน">รายวัน</option>
                 </select>
               </div>
 

@@ -11,7 +11,8 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
-import { type UserProfile } from "./actions";
+import { type UserProfile } from "../../app/admin/user-management/actions";
+import { toast } from "@/lib/toast";
 
 interface AdminPanelClientProps {
   initialUsers: UserProfile[];
@@ -29,7 +30,7 @@ export function AdminPanelClient({ initialUsers, currentUser }: AdminPanelClient
       const updateData = {
         status,
         approved_by: currentUser.id,
-        approved_at: new Date().toISOString()
+        approved_at: new Date().toISOString(),
       };
 
       const { error } = await supabase
@@ -40,20 +41,20 @@ export function AdminPanelClient({ initialUsers, currentUser }: AdminPanelClient
       if (error) throw error;
 
       // อัปเดต state
-      setUsers(users.map(user => 
-        user.id === userId 
-          ? { 
-              ...user, 
-              status, 
-              approved_at: new Date().toISOString()
+      setUsers(users.map(user =>
+        user.id === userId
+          ? {
+              ...user,
+              status,
+              approved_at: new Date().toISOString(),
             }
           : user
       ));
 
-      alert(`อัปเดตสถานะผู้ใช้เป็น ${status === 'approved' ? 'อนุมัติ' : 'ปฏิเสธ'} เรียบร้อยแล้ว`);
+      toast.success(`อัปเดตสถานะผู้ใช้เป็น ${status === 'approved' ? 'อนุมัติ' : 'ปฏิเสธ'} เรียบร้อยแล้ว`);
     } catch (error) {
       console.error('Error updating user status:', error);
-      alert('เกิดข้อผิดพลาดในการอัปเดตสถานะผู้ใช้');
+      toast.error('เกิดข้อผิดพลาดในการอัปเดตสถานะผู้ใช้');
     } finally {
       setProcessingId(null);
     }
@@ -70,14 +71,14 @@ export function AdminPanelClient({ initialUsers, currentUser }: AdminPanelClient
       if (error) throw error;
 
       // อัปเดต state
-      setUsers(users.map(user => 
+      setUsers(users.map(user =>
         user.id === userId ? { ...user, role } : user
       ));
 
-      alert(`อัปเดตบทบาทผู้ใช้เป็น ${role === 'admin' ? 'Admin' : 'User'} เรียบร้อยแล้ว`);
+      toast.success(`อัปเดตบทบาทผู้ใช้เป็น ${role === 'admin' ? 'Admin' : 'User'} เรียบร้อยแล้ว`);
     } catch (error) {
       console.error('Error updating user role:', error);
-      alert('เกิดข้อผิดพลาดในการอัปเดตบทบาทผู้ใช้');
+      toast.error('เกิดข้อผิดพลาดในการอัปเดตบทบาทผู้ใช้');
     } finally {
       setProcessingId(null);
     }
@@ -170,6 +171,9 @@ export function AdminPanelClient({ initialUsers, currentUser }: AdminPanelClient
                   <div className="space-y-1">
                     <div className="font-medium">{user.full_name}</div>
                     <div className="text-sm text-muted-foreground">{user.email}</div>
+                    {user.company_name && (
+                      <div className="text-sm text-blue-600 font-medium">{user.company_name}</div>
+                    )}
                     <div className="text-xs text-muted-foreground">
                       สมัครเมื่อ: {new Date(user.created_at).toLocaleDateString('th-TH')}
                     </div>
@@ -213,6 +217,9 @@ export function AdminPanelClient({ initialUsers, currentUser }: AdminPanelClient
                 <div className="space-y-1">
                   <div className="font-medium">{user.full_name}</div>
                   <div className="text-sm text-muted-foreground">{user.email}</div>
+                  {user.company_name && (
+                    <div className="text-sm text-blue-600 font-medium">{user.company_name}</div>
+                  )}
                   <div className="flex gap-2">
                     {getStatusBadge(user.status)}
                     {getRoleBadge(user.role)}

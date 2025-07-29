@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { getEmployees, type Employee } from "../../app/employee/actions";
+import { getEmployees, updateEmployee, type Employee } from "../../app/employee/actions";
 import ChangeStatusButton from "@/components/employee/ChangeStatusButton";
 import AddEmployeeButton from "@/components/employee/AddEmployeeButton";
 import { toast } from "@/lib/toast";
@@ -46,6 +46,8 @@ function EmployeeTableClient({
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(
     null
   );
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const loadEmployees = async (page: number, searchQuery: string) => {
     const result = await getEmployees(page, 15, searchQuery);
@@ -76,6 +78,58 @@ function EmployeeTableClient({
   const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return "-";
     return new Date(dateString).toLocaleDateString("th-TH");
+  };
+
+  const handleEdit = () => {
+    if (selectedEmployee) {
+      setIsEditModalOpen(true);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setSelectedEmployee(null);
+    setIsEditModalOpen(false);
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!selectedEmployee) return;
+
+    setIsSubmitting(true);
+    
+    try {
+      const formData = new FormData(e.currentTarget);
+      
+      // เรียกใช้ action สำหรับอัปเดตข้อมูลพนักงาน
+      const result = await updateEmployee({
+        employeeId: selectedEmployee.employee_id,
+        prefix_th: formData.get('prefix_th') as string,
+        first_name_th: formData.get('first_name_th') as string,
+        last_name_th: formData.get('last_name_th') as string,
+        prefix_en: formData.get('prefix_en') as string,
+        first_name_en: formData.get('first_name_en') as string,
+        last_name_en: formData.get('last_name_en') as string,
+        birth_date: formData.get('birth_date') as string,
+      });
+      
+      if (result.error) {
+        toast.error("เกิดข้อผิดพลาดในการแก้ไขข้อมูล: " + result.error);
+        return;
+      }
+      
+      toast.success("แก้ไขข้อมูลพนักงานสำเร็จ");
+      handleCloseModal();
+      // Refresh the data
+      startTransition(() => {
+        loadEmployees(currentPage, searchQuery);
+      });
+      
+    } catch (error) {
+      console.error("Error updating employee:", error);
+      toast.error("เกิดข้อผิดพลาดในการแก้ไขข้อมูลพนักงาน");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -262,7 +316,7 @@ function EmployeeTableClient({
       </div>
 
       {/* Employee Detail Modal */}
-      {selectedEmployee && (
+      {selectedEmployee && !isEditModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div 
             className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto transform transition-all duration-300 ease-out scale-100"
@@ -277,7 +331,7 @@ function EmployeeTableClient({
                   ข้อมูลพนักงาน
                 </h2>
                 <button
-                  onClick={() => setSelectedEmployee(null)}
+                  onClick={handleCloseModal}
                   className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors duration-200"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -419,28 +473,289 @@ function EmployeeTableClient({
               </div>
               
               {/* Footer */}
-              <div className="flex justify-between items-center pt-6 border-t border-gray-100">
-                {!isAdmin && (
-                  <ChangeStatusButton
-                    employeeId={selectedEmployee.employee_id}
-                    onStatusChange={() => {
-                      setSelectedEmployee(null);
-                      // รีเฟรชข้อมูลตารางหลังเปลี่ยนสถานะ
-                      startTransition(() => {
-                        loadEmployees(currentPage, searchQuery);
-                      });
-                    }}
-                  />
-                )}
-                <Button
-                  variant="outline"
-                  onClick={() => setSelectedEmployee(null)}
-                  className={`px-6 py-2 ${isAdmin ? "ml-auto" : ""}`}
-                >
-                  ปิด
-                </Button>
+              <div className="pt-6 border-t border-gray-100">
+                <div className="flex justify-between items-center">
+                  {!isAdmin && (
+                    <ChangeStatusButton
+                      employeeId={selectedEmployee.employee_id}
+                      onStatusChange={() => {
+                        setSelectedEmployee(null);
+                        // รีเฟรชข้อมูลตารางหลังเปลี่ยนสถานะ
+                        startTransition(() => {
+                          loadEmployees(currentPage, searchQuery);
+                        });
+                      }}
+                    />
+                  )}
+                  <div className="flex justify-end space-x-3 ml-auto">
+                    <Button
+                      variant="outline"
+                      onClick={handleCloseModal}
+                      className="px-6 py-2"
+                    >
+                      ปิด
+                    </Button>
+                    {!isAdmin && (
+                      <Button
+                        onClick={handleEdit}
+                      >
+                        แก้ไข
+                      </Button>
+                    )}
+                  </div>
+                </div>
               </div>
 
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Employee Modal */}
+      {selectedEmployee && isEditModalOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div 
+            className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto transform transition-all duration-300 ease-out scale-100"
+            style={{
+              animation: 'modalFadeIn 0.3s ease-out'
+            }}
+          >
+            <div className="p-8">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-gray-800">
+                  แก้ไขข้อมูลพนักงาน
+                </h2>
+                <button
+                  onClick={handleCloseModal}
+                  className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors duration-200"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <form className="space-y-6" onSubmit={handleSaveEdit}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* ข้อมูลที่ไม่สามารถแก้ไขได้ */}
+                  <div className="space-y-1">
+                    <label className="block text-sm font-medium text-gray-700">
+                      เลขบัตรประชาชน
+                    </label>
+                    <Input
+                      type="text"
+                      defaultValue={selectedEmployee.personal_id}
+                      className="w-full"
+                      disabled
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-sm font-medium text-gray-700">
+                      รหัสพนักงาน
+                    </label>
+                    <Input
+                      type="text"
+                      defaultValue={selectedEmployee.employee_code || ""}
+                      className="w-full"
+                      disabled
+                    />
+                  </div>
+
+                  {/* ข้อมูลภาษาไทยที่แก้ไขได้ */}
+                  <div className="space-y-1">
+                    <label className="block text-sm font-medium text-gray-700">
+                      คำนำหน้า (ไทย)
+                    </label>
+                    <select
+                      name="prefix_th"
+                      defaultValue={selectedEmployee.prefix_th || ""}
+                      className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 p-2 border"
+                    >
+                      <option value="">เลือกคำนำหน้า</option>
+                      <option value="นาย">นาย</option>
+                      <option value="นาง">นาง</option>
+                      <option value="นางสาว">นางสาว</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-sm font-medium text-gray-700">
+                      ชื่อ (ไทย)
+                    </label>
+                    <Input
+                      type="text"
+                      name="first_name_th"
+                      defaultValue={selectedEmployee.first_name_th || ""}
+                      placeholder="ชื่อภาษาไทย"
+                      className="w-full"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-sm font-medium text-gray-700">
+                      นามสกุล (ไทย)
+                    </label>
+                    <Input
+                      type="text"
+                      name="last_name_th"
+                      defaultValue={selectedEmployee.last_name_th || ""}
+                      placeholder="นามสกุลภาษาไทย"
+                      className="w-full"
+                      required
+                    />
+                  </div>
+
+                  {/* ข้อมูลภาษาอังกฤษที่แก้ไขได้ */}
+                  <div className="space-y-1">
+                    <label className="block text-sm font-medium text-gray-700">
+                      คำนำหน้า (อังกฤษ)
+                    </label>
+                    <select
+                      name="prefix_en"
+                      defaultValue={selectedEmployee.prefix_en || ""}
+                      className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 p-2 border"
+                    >
+                      <option value="">เลือกคำนำหน้า</option>
+                      <option value="Mr.">Mr.</option>
+                      <option value="Mrs.">Mrs.</option>
+                      <option value="Miss">Miss</option>
+                      <option value="Ms.">Ms.</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-sm font-medium text-gray-700">
+                      ชื่อ (อังกฤษ)
+                    </label>
+                    <Input
+                      type="text"
+                      name="first_name_en"
+                      defaultValue={selectedEmployee.first_name_en || ""}
+                      placeholder="First Name"
+                      className="w-full"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-sm font-medium text-gray-700">
+                      นามสกุล (อังกฤษ)
+                    </label>
+                    <Input
+                      type="text"
+                      name="last_name_en"
+                      defaultValue={selectedEmployee.last_name_en || ""}
+                      placeholder="Last Name"
+                      className="w-full"
+                      required
+                    />
+                  </div>
+
+                  {/* วันเกิดที่แก้ไขได้ */}
+                  <div className="space-y-1">
+                    <label className="block text-sm font-medium text-gray-700">
+                      วันเกิด
+                    </label>
+                    <Input
+                      type="date"
+                      name="birth_date"
+                      defaultValue={selectedEmployee.birth_date ? new Date(selectedEmployee.birth_date).toISOString().split('T')[0] : ""}
+                      className="w-full"
+                    />
+                  </div>
+
+                  {/* ข้อมูลที่ไม่สามารถแก้ไขได้ */}
+                  <div className="space-y-1">
+                    <label className="block text-sm font-medium text-gray-700">
+                      ตำแหน่งงาน
+                    </label>
+                    <Input
+                      type="text"
+                      defaultValue={selectedEmployee.job_position_name || ""}
+                      className="w-full"
+                      disabled
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-sm font-medium text-gray-700">
+                      วันที่เริ่มงาน
+                    </label>
+                    <Input
+                      type="text"
+                      defaultValue={formatDate(selectedEmployee.start_date)}
+                      className="w-full"
+                      disabled
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-sm font-medium text-gray-700">
+                      เลข PO
+                    </label>
+                    <Input
+                      type="text"
+                      defaultValue={selectedEmployee.po_number || ""}
+                      className="w-full"
+                      disabled
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-sm font-medium text-gray-700">
+                      บริษัท
+                    </label>
+                    <Input
+                      type="text"
+                      defaultValue={selectedEmployee.company_name || ""}
+                      className="w-full"
+                      disabled
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-sm font-medium text-gray-700">
+                      สถานะ
+                    </label>
+                    <Input
+                      type="text"
+                      defaultValue={selectedEmployee.status_code || ""}
+                      className="w-full"
+                      disabled
+                    />
+                  </div>
+                </div>
+                
+                {/* Footer */}
+                <div className="flex justify-end space-x-3 pt-6 border-t border-gray-100">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleCloseModal}
+                    disabled={isSubmitting}
+                  >
+                    ยกเลิก
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsEditModalOpen(false)}
+                    disabled={isSubmitting}
+                  >
+                    กลับไปดูรายละเอียด
+                  </Button>
+                  <Button 
+                    type="submit"
+                    className="bg-green-600 hover:bg-green-700"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? "กำลังบันทึก..." : "บันทึกการแก้ไข"}
+                  </Button>
+                </div>
+              </form>
             </div>
           </div>
         </div>

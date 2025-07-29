@@ -7,6 +7,8 @@ export interface UserProfile {
   id: string;
   email: string;
   full_name: string;
+  company_id?: number;
+  company_name?: string;
   role: 'user' | 'admin';
   status: 'pending' | 'approved' | 'rejected';
   created_at: string;
@@ -23,7 +25,12 @@ export async function getCurrentUser(): Promise<UserProfile> {
 
   const { data: profile } = await supabase
     .from('user_profiles')
-    .select('*')
+    .select(`
+      *,
+      companies (
+        company_name
+      )
+    `)
     .eq('id', user.id)
     .single();
 
@@ -31,7 +38,10 @@ export async function getCurrentUser(): Promise<UserProfile> {
     redirect('/protected');
   }
 
-  return profile as UserProfile;
+  return {
+    ...profile,
+    company_name: profile.companies?.company_name
+  } as UserProfile;
 }
 
 export async function getAllUsers(): Promise<UserProfile[]> {
@@ -39,7 +49,12 @@ export async function getAllUsers(): Promise<UserProfile[]> {
   
   const { data: users, error } = await supabase
     .from('user_profiles')
-    .select('*')
+    .select(`
+      *,
+      companies (
+        company_name
+      )
+    `)
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -47,5 +62,8 @@ export async function getAllUsers(): Promise<UserProfile[]> {
     return [];
   }
 
-  return users as UserProfile[];
+  return users.map(user => ({
+    ...user,
+    company_name: user.companies?.company_name
+  })) as UserProfile[];
 }

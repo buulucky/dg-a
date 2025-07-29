@@ -139,3 +139,70 @@ export async function getUserRole(): Promise<{ role: string | null; isAdmin: boo
     return { role: null, isAdmin: false };
   }
 }
+
+export async function updateEmployee({
+  employeeId,
+  prefix_th,
+  first_name_th,
+  last_name_th,
+  prefix_en,
+  first_name_en,
+  last_name_en,
+  birth_date,
+}: {
+  employeeId: string;
+  prefix_th: string;
+  first_name_th: string;
+  last_name_th: string;
+  prefix_en: string;
+  first_name_en: string;
+  last_name_en: string;
+  birth_date: string;
+}): Promise<{ error: string | null }> {
+  try {
+    const supabase = await createClient();
+    
+    // ตรวจสอบ user ที่ล็อกอิน
+    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !authUser) {
+      return { error: "ไม่พบผู้ใช้ที่ล็อกอิน" };
+    }
+
+    // ตรวจสอบสิทธิ์ (เฉพาะ admin ที่สามารถแก้ไขได้)
+    const { data: userProfile, error: profileError } = await supabase
+      .from("user_profiles")
+      .select("role")
+      .eq("id", authUser.id)
+      .single();
+
+    if (profileError || !userProfile || userProfile.role !== 'admin') {
+      return { error: "ไม่มีสิทธิ์ในการแก้ไขข้อมูลพนักงาน" };
+    }
+
+    // อัปเดตข้อมูลพนักงาน
+    const { error: updateError } = await supabase
+      .from("employees")
+      .update({
+        prefix_th,
+        first_name_th,
+        last_name_th,
+        prefix_en,
+        first_name_en,
+        last_name_en,
+        birth_date,
+      })
+      .eq("employee_id", employeeId);
+
+    if (updateError) {
+      console.error("Error updating employee:", updateError);
+      return { error: updateError.message || "เกิดข้อผิดพลาดในการอัปเดตข้อมูล" };
+    }
+
+    return { error: null };
+    
+  } catch (error) {
+    console.error("Server action error:", error);
+    return { error: "เกิดข้อผิดพลาดในการอัปเดตข้อมูล" };
+  }
+}

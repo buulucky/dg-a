@@ -206,7 +206,7 @@ export default function AddCourseButton({ onCourseAdded }: AddCourseButtonProps)
       <Button onClick={() => setOpen(true)}>+ จับคู่ตำแหน่งกับหลักสูตร</Button>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+        <div className="fixed inset-0 z-50  backdrop-blur-sm  flex items-center justify-center p-4 bg-black bg-opacity-50">
           <div
             className="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto"
             style={{ animation: "modalFadeIn 0.2s ease-out" }}

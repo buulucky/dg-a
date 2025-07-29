@@ -23,20 +23,7 @@ interface AddPOButtonProps {
   onPOAdded?: () => void;
 }
 
-// Corrected types for job positions and companies
-interface JobPosition {
-  job_position_id: string;
-  job_positions: {
-    job_position_name: string;
-  }[]; // Adjusted to match array structure
-}
-
-interface Company {
-  company_id: string;
-  companies: {
-    company_name: string;
-  }[]; // Adjusted to match array structure
-}
+// ...existing code...
 
 export default function AddPOButton({ onPOAdded }: AddPOButtonProps) {
   const [open, setOpen] = useState(false);
@@ -74,7 +61,6 @@ export default function AddPOButton({ onPOAdded }: AddPOButtonProps) {
     fetchFunctions();
   }, []);
 
-  // ดึงตำแหน่งงานเมื่อเลือกฟังก์ชัน
   useEffect(() => {
     const fetchJobPositions = async () => {
       if (!selectedFunctionId) {
@@ -94,15 +80,26 @@ export default function AddPOButton({ onPOAdded }: AddPOButtonProps) {
         `)
         .eq("function_id", selectedFunctionId);
 
+      console.log("Selected Function ID:", selectedFunctionId);
+      console.log("Job Positions Data:", data);
+
       setLoadingJobPositions(false);
 
       if (error) {
+        console.error("Error fetching job positions:", error);
         toast.error("เกิดข้อผิดพลาดในการโหลดข้อมูลตำแหน่งงาน: " + error.message);
       } else {
-        const formattedData = data?.map((item: JobPosition) => ({
-          job_position_id: item.job_position_id,
-          job_position_name: item.job_positions[0]?.job_position_name || "", // Access first element
-        })) || [];
+        console.log("Raw job positions data:", data); // Debug
+        const formattedData = data?.map((item: { job_position_id: string; job_positions?: { job_position_name: string } | { job_position_name: string }[] }) => {
+          console.log("Item structure:", item); // Debug each item
+          return {
+            job_position_id: item.job_position_id,
+            job_position_name: (Array.isArray(item.job_positions)
+              ? item.job_positions[0]?.job_position_name
+              : (item.job_positions as { job_position_name: string } | undefined)?.job_position_name) || "Unknown Position",
+          };
+        }) || [];
+        console.log("Formatted job positions:", formattedData); // Debug
         setJobPositions(formattedData);
         setSelectedJobPositionId("");
         setSelectedCompanyId("");
@@ -112,7 +109,6 @@ export default function AddPOButton({ onPOAdded }: AddPOButtonProps) {
     fetchJobPositions();
   }, [selectedFunctionId]);
 
-  // ดึงบริษัทเมื่อเลือกฟังก์ชันและตำแหน่งงาน
   useEffect(() => {
     const fetchCompanies = async () => {
       if (!selectedFunctionId || !selectedJobPositionId) {
@@ -132,15 +128,27 @@ export default function AddPOButton({ onPOAdded }: AddPOButtonProps) {
         .eq("function_id", selectedFunctionId)
         .eq("job_position_id", selectedJobPositionId);
 
+      console.log("Selected Function ID:", selectedFunctionId);
+      console.log("Selected Job Position ID:", selectedJobPositionId);
+      console.log("Companies Data:", data);
+
       setLoadingCompanies(false);
 
       if (error) {
+        console.error("Error fetching companies:", error); // Debug
         toast.error("เกิดข้อผิดพลาดในการโหลดข้อมูลบริษัท: " + error.message);
       } else {
-        const formattedData = data?.map((item: Company) => ({
-          company_id: item.company_id,
-          company_name: item.companies[0]?.company_name || "", // Access first element
-        })) || [];
+        console.log("Raw companies data:", data); // Debug
+        const formattedData = data?.map((item: { company_id: string; companies?: { company_name: string } | { company_name: string }[] }) => {
+          console.log("Company item structure:", item); // Debug each item
+          return {
+            company_id: item.company_id,
+            company_name: (Array.isArray(item.companies)
+              ? item.companies[0]?.company_name
+              : (item.companies as { company_name: string } | undefined)?.company_name) || "Unknown Company",
+          };
+        }) || [];
+        console.log("Formatted companies:", formattedData); // Debug
         setCompanies(formattedData);
         setSelectedCompanyId("");
       }
@@ -324,16 +332,15 @@ export default function AddPOButton({ onPOAdded }: AddPOButtonProps) {
                 />
               </div>
               <div>
-                <Label htmlFor="paymentType">ประเภทการจ่าย</Label>
+                <Label htmlFor="paymentType">สัญญา</Label>
                 <select
                   id="paymentType"
                   value={paymentType}
                   onChange={(e) => setPaymentType(e.target.value)}
                   className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 >
-                  <option value="">เลือกประเภทการจ่าย</option>
-                  <option value="รายเดือน">รายเดือน</option>
                   <option value="รายวัน">รายวัน</option>
+                  <option value="รายเดือน">รายเดือน</option>
                 </select>
               </div>
 

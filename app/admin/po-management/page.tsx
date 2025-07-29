@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 export default async function PoManagement() {
   const [roleResult, posResult] = await Promise.all([
     getUserRole(),
-    getPOs(1, 15, "") // หน้าแรก, 15 รายการ, ไม่มีการค้นหา
+    getPOs(1, 15, "")
   ]);
 
   const isAdmin = roleResult.isAdmin;

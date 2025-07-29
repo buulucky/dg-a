@@ -101,6 +101,13 @@ export default function Navbar() {
                     >
                       จัดการ PO
                     </Link>
+                    <Link
+                      href="/admin/course-management"
+                      className="block px-4 py-2 hover:bg-purple-50 hover:text-purple-700 transition last:rounded-b-lg"
+                      onClick={() => setShowManageDropdown(false)}
+                    >
+                      จัดการหลักสูตร
+                    </Link>
                   </div>
                 )}
               </div>

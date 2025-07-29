@@ -188,9 +188,13 @@ export default function AddCourseButton({ onCourseAdded }: AddCourseButtonProps)
       setSelectedCourseIds([]);
       if (onCourseAdded) onCourseAdded();
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Save error:", error);
-      toast.error("เกิดข้อผิดพลาดในการบันทึก: " + error.message);
+      if (error instanceof Error) {
+        toast.error("เกิดข้อผิดพลาดในการบันทึก: " + error.message);
+      } else {
+        toast.error("เกิดข้อผิดพลาดในการบันทึก");
+      }
     } finally {
       setLoading(false);
     }

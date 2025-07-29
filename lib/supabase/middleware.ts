@@ -48,19 +48,19 @@ export async function updateSession(request: NextRequest) {
   const user = data?.claims;
 
   const isAuthPage = request.nextUrl.pathname.startsWith("/auth");
-  const isProtectedPage = request.nextUrl.pathname.startsWith("/protected");
+  const isEmployeePage = request.nextUrl.pathname.startsWith("/employee");
   const isAdminPage = request.nextUrl.pathname.startsWith("/admin");
   const isHomePage = request.nextUrl.pathname === "/" || request.nextUrl.pathname === "/home";
 
   // ถ้าไม่มี user และพยายามเข้าหน้าที่ต้องล็อกอิน หรือหน้าแรก
-  if (!user && (isProtectedPage || isAdminPage || isHomePage)) {
+  if (!user && (isEmployeePage || isAdminPage || isHomePage)) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
     return NextResponse.redirect(url);
   }
 
   // ถ้ามี user แล้ว ตรวจสอบ profile และสถานะ
-  if (user && (isProtectedPage || isAdminPage)) {
+  if (user && (isEmployeePage || isAdminPage || isHomePage)) {
     try {
       const { data: profile, error } = await supabase
         .from('user_profiles')
@@ -91,7 +91,7 @@ export async function updateSession(request: NextRequest) {
       // ตรวจสอบสิทธิ์ admin
       if (isAdminPage && (profile.role !== 'admin' || profile.status !== 'approved')) {
         const url = request.nextUrl.clone();
-        url.pathname = "/protected";
+        url.pathname = "/";
         return NextResponse.redirect(url);
       }
 
@@ -108,7 +108,7 @@ export async function updateSession(request: NextRequest) {
       !request.nextUrl.pathname.includes("pending-approval") &&
       !request.nextUrl.pathname.includes("account-rejected")) {
     const url = request.nextUrl.clone();
-    url.pathname = "/protected";
+    url.pathname = "/";
     return NextResponse.redirect(url);
   }
 

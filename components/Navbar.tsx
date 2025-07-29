@@ -92,7 +92,7 @@ export default function Navbar() {
                       className="block px-4 py-2 hover:bg-purple-50 hover:text-purple-700 transition first:rounded-t-lg"
                       onClick={() => setShowManageDropdown(false)}
                     >
-                      จัดการผู้ใช้
+                      จัดการผู้ใช้งานระบบ
                     </Link>
                     <Link
                       href="/admin/po-management"

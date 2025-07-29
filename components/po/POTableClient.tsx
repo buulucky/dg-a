@@ -306,7 +306,7 @@ function POTableClient({
                       <p className="mt-1 text-sm text-gray-900">{selectedPO.employee_count || 0} คน</p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">ประเภท PO</label>
+                      <label className="block text-sm font-medium text-gray-700">สัญญา</label>
                       <p className="mt-1 text-sm text-gray-900">{selectedPO.po_type || "-"}</p>
                     </div>
                     <div>

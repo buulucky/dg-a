@@ -114,7 +114,7 @@ export function AdminPanelClient({ initialUsers, currentUser }: AdminPanelClient
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">จัดการสมาชิก</h1>
+        <h1 className="text-3xl font-bold">จัดการผู้ใช้งานระบบ</h1>
         <div className="text-sm text-muted-foreground">
           ผู้ดูแลระบบ: {currentUser.full_name}
         </div>

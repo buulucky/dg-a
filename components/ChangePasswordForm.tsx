@@ -3,7 +3,7 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "@/lib/toast";
 
-export default function ChangePasswordForm() {
+export default function ChangePasswordForm({ onSuccess }: { onSuccess?: () => void }) {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -25,6 +25,7 @@ export default function ChangePasswordForm() {
       toast.success("เปลี่ยนรหัสผ่านสำเร็จ");
       setNewPassword("");
       setConfirmPassword("");
+      if (onSuccess) onSuccess(); // ปิด popup ทันที
     }
   };
 

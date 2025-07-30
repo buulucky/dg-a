@@ -857,9 +857,9 @@ function EmployeeTableClient({
                     <p className="text-sm">พนักงานคนนี้ไม่มีหลักสูตรที่ต้องอบรมตามตำแหน่งงาน</p>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
+                  <div className="overflow-y-auto max-h-[400px]">
                     <table className="min-w-full divide-y divide-gray-200 border border-gray-300 rounded-lg">
-                      <thead className="bg-gray-50">
+                      <thead className="bg-gray-50 sticky top-0 z-10">
                         <tr>
                           <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-300">
                             หลักสูตร
@@ -888,15 +888,17 @@ function EmployeeTableClient({
                               {course.expiry_date ? formatDate(course.expiry_date) : "-"}
                             </td>
                             <td className="px-6 py-4 text-sm border-gray-300">
-                              <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${
-                                course.status === 'ปกติ' 
-                                  ? 'bg-green-100 text-green-800'
-                                  : course.status === 'ใกล้หมดอายุ'
-                                  ? 'bg-yellow-100 text-yellow-800' 
-                                  : course.status === 'หมดอายุแล้ว'
-                                  ? 'bg-red-100 text-red-800'
-                                  : 'bg-gray-100 text-gray-800'
-                              }`}>
+                              <span
+                                className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${
+                                  course.status === "ปกติ"
+                                    ? "bg-green-100 text-green-800"
+                                    : course.status === "ใกล้หมดอายุ"
+                                    ? "bg-yellow-100 text-yellow-800"
+                                    : course.status === "หมดอายุแล้ว"
+                                    ? "bg-red-100 text-red-800"
+                                    : "bg-gray-100 text-gray-800"
+                                }`}
+                              >
                                 {course.status}
                               </span>
                             </td>

@@ -113,3 +113,45 @@ export async function getPOs(page = 1, limit = 15, searchQuery = "") {
 
   return { data: formattedData, total, totalPages };
 }
+
+export async function updatePO(poId: number, updateData: {
+  employee_count: number;
+  po_type: string;
+  start_date: string;
+  end_date: string;
+}) {
+  const supabase = await createClient();
+  
+  // ตรวจสอบสิทธิ์ผู้ใช้
+  const { isAdmin, user } = await getUserRole();
+  
+  if (!isAdmin && !user) {
+    return { success: false, error: "ไม่มีสิทธิ์แก้ไขข้อมูล" };
+  }
+
+  try {
+    // อัพเดตข้อมูล PO (ไม่รวม po_number)
+    const { data, error } = await supabase
+      .from("po")
+      .update({
+        employee_count: updateData.employee_count,
+        po_type: updateData.po_type,
+        start_date: updateData.start_date,
+        end_date: updateData.end_date,
+        updated_at: new Date().toISOString()
+      })
+      .eq("po_id", poId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error updating PO:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error("Unexpected error updating PO:", error);
+    return { success: false, error: "เกิดข้อผิดพลาดที่ไม่คาดคิด" };
+  }
+}

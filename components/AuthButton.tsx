@@ -153,6 +153,15 @@ export function AuthButton() {
             <div className="px-4 py-2 text-xs text-gray-500 border-b">
               {user.email}
             </div>
+            {profile?.role === "admin" && (
+              <Link
+                href="/admin/management/user"
+                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700 transition"
+                onClick={() => setShowDropdown(false)}
+              >
+                จัดการผู้ใช้งานระบบ
+              </Link>
+            )}
             <button
               type="button"
               className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700 transition"
@@ -201,7 +210,7 @@ export function AuthButton() {
 
             {/* Form Content */}
             <div className="mb-6">
-              <ChangePasswordForm />
+              <ChangePasswordForm onSuccess={() => setShowModal(false)} />
             </div>
 
             {/* Footer */}

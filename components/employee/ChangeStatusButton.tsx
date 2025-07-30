@@ -12,6 +12,8 @@ const statusOptions = [
   { value: "2", label: "ลาออก" },
   { value: "3", label: "เลิกจ้าง" },
   { value: "5", label: "เกษียณอายุ" },
+  { value: "4", label: "หมดสัญญา" },
+  { value: "6", label: "ย้าย PO/แผนก" },
 ];
 
 export default function ChangeStatusButton({ employeeId, onStatusChange }: ChangeStatusButtonProps) {

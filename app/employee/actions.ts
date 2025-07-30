@@ -169,17 +169,6 @@ export async function updateEmployee({
       return { error: "ไม่พบผู้ใช้ที่ล็อกอิน" };
     }
 
-    // ตรวจสอบสิทธิ์ (เฉพาะ admin ที่สามารถแก้ไขได้)
-    const { data: userProfile, error: profileError } = await supabase
-      .from("user_profiles")
-      .select("role")
-      .eq("id", authUser.id)
-      .single();
-
-    if (profileError || !userProfile || userProfile.role !== 'admin') {
-      return { error: "ไม่มีสิทธิ์ในการแก้ไขข้อมูลพนักงาน" };
-    }
-
     // อัปเดตข้อมูลพนักงาน
     const { error: updateError } = await supabase
       .from("employees")

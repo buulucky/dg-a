@@ -35,3 +35,63 @@ CREATE TRIGGER check_no_duplicate_active_contracts
 BEFORE INSERT OR UPDATE ON employee_contracts
 FOR EACH ROW
 EXECUTE FUNCTION prevent_duplicate_active_contracts();
+
+
+
+
+
+
+
+-- เปิด RLS
+ALTER TABLE employee_contracts ENABLE ROW LEVEL SECURITY;
+
+-- อ่านได้เฉพาะของบริษัทตัวเอง หรือ admin เห็นได้ทั้งหมด
+CREATE POLICY "Read own company or admin"
+ON employee_contracts
+FOR SELECT
+USING (
+  EXISTS (
+    SELECT 1 FROM user_profiles
+    WHERE id = auth.uid()
+      AND (
+        role = 'admin'
+        OR company_id = (
+          SELECT company_id FROM employees WHERE employees.employee_id = employee_contracts.employee_id
+        )
+      )
+  )
+);
+
+-- เพิ่มได้เฉพาะของบริษัทตัวเอง หรือ admin เพิ่มได้ทั้งหมด
+CREATE POLICY "Insert own company or admin"
+ON employee_contracts
+FOR INSERT
+WITH CHECK (
+  EXISTS (
+    SELECT 1 FROM user_profiles
+    WHERE id = auth.uid()
+      AND (
+        role = 'admin'
+        OR company_id = (
+          SELECT company_id FROM employees WHERE employees.employee_id = employee_contracts.employee_id
+        )
+      )
+  )
+);
+
+-- แก้ไขได้เฉพาะของบริษัทตัวเอง หรือ admin แก้ไขได้ทั้งหมด
+CREATE POLICY "Update own company or admin"
+ON employee_contracts
+FOR UPDATE
+USING (
+  EXISTS (
+    SELECT 1 FROM user_profiles
+    WHERE id = auth.uid()
+      AND (
+        role = 'admin'
+        OR company_id = (
+          SELECT company_id FROM employees WHERE employees.employee_id = employee_contracts.employee_id
+        )
+      )
+  )
+);

@@ -30,10 +30,10 @@ export default function Navbar() {
         setShowReportDropdown(false);
       }
     }
-    
+
     // เพิ่ม event listener เฉพาะเมื่อมี dropdown เปิดอยู่
     document.addEventListener("mousedown", handleClickOutside);
-    
+
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
@@ -55,7 +55,7 @@ export default function Navbar() {
           {/* Links */}
           <div className="flex gap-6 items-center">
             <Link href="/employee" className="hover:text-purple-200 transition">
-              ตารางพนักงาน
+              Employee
             </Link>
 
             {user?.role === "admin" && user?.status === "approved" && (
@@ -67,7 +67,7 @@ export default function Navbar() {
                     setShowReportDropdown(false); // ปิด dropdown อื่น
                   }}
                 >
-                  เมนูจัดการ
+                  Management
                   <svg
                     className={`w-4 h-4 transition-transform ${
                       showManageDropdown ? "rotate-180" : ""
@@ -88,25 +88,25 @@ export default function Navbar() {
                 {showManageDropdown && (
                   <div className="absolute top-full right-0 mt-1 bg-white text-gray-800 rounded-lg shadow-lg min-w-[180px] z-50">
                     <Link
-                      href="/admin/management/user"
+                      href="/admin/management/po"
                       className="block px-4 py-2 hover:bg-purple-50 hover:text-purple-700 transition first:rounded-t-lg"
                       onClick={() => setShowManageDropdown(false)}
                     >
-                      จัดการผู้ใช้งานระบบ
+                      Purchase Order
                     </Link>
                     <Link
-                      href="/admin/management/po"
+                      href="#"
                       className="block px-4 py-2 hover:bg-purple-50 hover:text-purple-700 transition last:rounded-b-lg"
                       onClick={() => setShowManageDropdown(false)}
                     >
-                      จัดการ PO
+                      XXXXXX
                     </Link>
                     <Link
                       href="/admin/management/course"
                       className="block px-4 py-2 hover:bg-purple-50 hover:text-purple-700 transition last:rounded-b-lg"
                       onClick={() => setShowManageDropdown(false)}
                     >
-                      จัดการหลักสูตร
+                      Position & Course
                     </Link>
                   </div>
                 )}
@@ -118,10 +118,10 @@ export default function Navbar() {
                   className="hover:text-purple-200 transition flex items-center gap-1"
                   onClick={() => {
                     setShowReportDropdown(!showReportDropdown);
-                    setShowManageDropdown(false); // ปิด dropdown อื่น
+                    setShowManageDropdown(false);
                   }}
                 >
-                  รายงาน
+                  Dashboard
                   <svg
                     className={`w-4 h-4 transition-transform ${
                       showReportDropdown ? "rotate-180" : ""
@@ -146,14 +146,14 @@ export default function Navbar() {
                       className="block px-4 py-2 hover:bg-purple-50 hover:text-purple-700 transition first:rounded-t-lg"
                       onClick={() => setShowReportDropdown(false)}
                     >
-                      รายงานพนักงาน
+                      Report
                     </Link>
                     <Link
                       href="/admin/reports/po"
                       className="block px-4 py-2 hover:bg-purple-50 hover:text-purple-700 transition last:rounded-b-lg"
                       onClick={() => setShowReportDropdown(false)}
                     >
-                      รายงาน PO
+                      Course Calendar
                     </Link>
                   </div>
                 )}

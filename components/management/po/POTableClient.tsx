@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { getPOs, type PO } from "@/app/admin/management/po/actions";
+import { getPOs, updatePO, type PO } from "@/app/admin/management/po/actions";
 import { toast } from "@/lib/toast";
 import AddPOButton from "./AddPOButton";
 
@@ -117,23 +117,25 @@ function POTableClient({
     try {
       const formData = new FormData(e.currentTarget);
       
-      // TODO: Implement the actual update logic here
-      // This would typically involve calling an API or action to update the PO
-      console.log("Updating PO with data:", {
-        po_id: selectedPO.po_id,
-        po_number: formData.get('po_number'),
-        employee_count: formData.get('employee_count'),
-        po_type: formData.get('po_type'),
-        start_date: formData.get('start_date'),
-        end_date: formData.get('end_date'),
-      });
+      const updateData = {
+        employee_count: parseInt(formData.get('employee_count') as string),
+        po_type: formData.get('po_type') as string,
+        start_date: formData.get('start_date') as string,
+        end_date: formData.get('end_date') as string,
+      };
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const result = await updatePO(selectedPO.po_id, updateData);
       
-      toast.success("แก้ไขข้อมูล PO สำเร็จ");
-      handleCloseModal();
-      handleRefresh(); // Refresh the data
+      if (result.success) {
+        toast.success("แก้ไขข้อมูล PO สำเร็จ");
+        handleCloseModal();
+        // รีเฟรชข้อมูลในตาราง
+        startTransition(() => {
+          loadPOs(currentPage, searchQuery);
+        });
+      } else {
+        toast.error(result.error || "เกิดข้อผิดพลาดในการแก้ไขข้อมูล PO");
+      }
       
     } catch (error) {
       console.error("Error updating PO:", error);

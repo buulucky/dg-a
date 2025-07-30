@@ -36,17 +36,8 @@ BEFORE INSERT OR UPDATE ON employee_contracts
 FOR EACH ROW
 EXECUTE FUNCTION prevent_duplicate_active_contracts();
 
-
-
-
-
-
-
--- เปิด RLS
-ALTER TABLE employee_contracts ENABLE ROW LEVEL SECURITY;
-
--- อ่านได้เฉพาะของบริษัทตัวเอง หรือ admin เห็นได้ทั้งหมด
-CREATE POLICY "Read own company or admin"
+-- อ่านได้เฉพาะ admin เห็นได้ทั้งหมด หรือ user มี company_id ตรงกับ company_id ที่จอยกับ po_id
+CREATE POLICY "Read admin or user with matching company_id"
 ON employee_contracts
 FOR SELECT
 USING (
@@ -56,14 +47,14 @@ USING (
       AND (
         role = 'admin'
         OR company_id = (
-          SELECT company_id FROM employees WHERE employees.employee_id = employee_contracts.employee_id
+          SELECT company_id FROM po WHERE po.po_id = employee_contracts.po_id
         )
       )
   )
 );
 
--- เพิ่มได้เฉพาะของบริษัทตัวเอง หรือ admin เพิ่มได้ทั้งหมด
-CREATE POLICY "Insert own company or admin"
+-- เพิ่มได้เฉพาะ admin เพิ่มได้ทั้งหมด หรือ user มี company_id ตรงกับ company_id ที่จอยกับ po_id
+CREATE POLICY "Insert admin or user with matching company_id"
 ON employee_contracts
 FOR INSERT
 WITH CHECK (
@@ -73,14 +64,14 @@ WITH CHECK (
       AND (
         role = 'admin'
         OR company_id = (
-          SELECT company_id FROM employees WHERE employees.employee_id = employee_contracts.employee_id
+          SELECT company_id FROM po WHERE po.po_id = employee_contracts.po_id
         )
       )
   )
 );
 
--- แก้ไขได้เฉพาะของบริษัทตัวเอง หรือ admin แก้ไขได้ทั้งหมด
-CREATE POLICY "Update own company or admin"
+-- แก้ไขได้เฉพาะ admin แก้ไขได้ทั้งหมด หรือ user มี company_id ตรงกับ company_id ที่จอยกับ po_id
+CREATE POLICY "Update admin or user with matching company_id"
 ON employee_contracts
 FOR UPDATE
 USING (
@@ -90,8 +81,9 @@ USING (
       AND (
         role = 'admin'
         OR company_id = (
-          SELECT company_id FROM employees WHERE employees.employee_id = employee_contracts.employee_id
+          SELECT company_id FROM po WHERE po.po_id = employee_contracts.po_id
         )
       )
   )
 );
+

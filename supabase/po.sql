@@ -15,11 +15,20 @@ CREATE TABLE po (
 -- เปิด RLS ก่อน
 ALTER TABLE po ENABLE ROW LEVEL SECURITY;
 
--- อ่านได้ทุกคน
-CREATE POLICY "Allow read for all"
+-- อ่านได้เฉพาะ admin เห็นได้ทั้งหมด หรือ user มี company_id ตรงกับ company_id ของ PO
+CREATE POLICY "Read admin or user with matching company_id"
 ON po
 FOR SELECT
-USING (true);
+USING (
+  EXISTS (
+    SELECT 1 FROM user_profiles
+    WHERE id = auth.uid()
+      AND (
+        role = 'admin'
+        OR company_id = po.company_id
+      )
+  )
+);
 
 -- เพิ่มได้เฉพาะ admin
 CREATE POLICY "Allow insert for admin only"

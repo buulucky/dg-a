@@ -54,6 +54,10 @@ export default function Navbar() {
           </Link>
           {/* Links */}
           <div className="flex gap-6 items-center">
+            <Link href="/dashboard" className="hover:text-purple-200 transition">
+              Dashboard
+            </Link>
+            
             <Link href="/employee" className="hover:text-purple-200 transition">
               Employee
             </Link>
@@ -94,13 +98,13 @@ export default function Navbar() {
                     >
                       Purchase Order
                     </Link>
-                    <Link
+                    {/* <Link
                       href="#"
                       className="block px-4 py-2 hover:bg-purple-50 hover:text-purple-700 transition last:rounded-b-lg"
                       onClick={() => setShowManageDropdown(false)}
                     >
                       XXXXXX
-                    </Link>
+                    </Link> */}
                     <Link
                       href="/admin/management/course"
                       className="block px-4 py-2 hover:bg-purple-50 hover:text-purple-700 transition last:rounded-b-lg"
@@ -121,7 +125,7 @@ export default function Navbar() {
                     setShowManageDropdown(false);
                   }}
                 >
-                  Dashboard
+                  Report
                   <svg
                     className={`w-4 h-4 transition-transform ${
                       showReportDropdown ? "rotate-180" : ""
@@ -146,7 +150,7 @@ export default function Navbar() {
                       className="block px-4 py-2 hover:bg-purple-50 hover:text-purple-700 transition first:rounded-t-lg"
                       onClick={() => setShowReportDropdown(false)}
                     >
-                      Report
+                      Report Excel
                     </Link>
                     <Link
                       href="/admin/reports/po"

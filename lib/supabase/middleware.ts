@@ -50,17 +50,18 @@ export async function updateSession(request: NextRequest) {
   const isAuthPage = request.nextUrl.pathname.startsWith("/auth");
   const isEmployeePage = request.nextUrl.pathname.startsWith("/employee");
   const isAdminPage = request.nextUrl.pathname.startsWith("/admin");
+  const isDashboardPage = request.nextUrl.pathname.startsWith("/dashboard");
   const isHomePage = request.nextUrl.pathname === "/" || request.nextUrl.pathname === "/home";
 
   // ถ้าไม่มี user และพยายามเข้าหน้าที่ต้องล็อกอิน หรือหน้าแรก
-  if (!user && (isEmployeePage || isAdminPage || isHomePage)) {
+  if (!user && (isEmployeePage || isAdminPage || isDashboardPage || isHomePage)) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
     return NextResponse.redirect(url);
   }
 
   // ถ้ามี user แล้ว ตรวจสอบ profile และสถานะ
-  if (user && (isEmployeePage || isAdminPage || isHomePage)) {
+  if (user && (isEmployeePage || isAdminPage || isDashboardPage || isHomePage)) {
     try {
       const { data: profile, error } = await supabase
         .from('user_profiles')

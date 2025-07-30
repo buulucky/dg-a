@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getEmployees, updateEmployee, type Employee } from "../../app/employee/actions";
 import ChangeStatusButton from "@/components/employee/ChangeStatusButton";
 import AddEmployeeButton from "@/components/employee/AddEmployeeButton";
 import { toast } from "@/lib/toast";
+import { createClient } from "@/lib/supabase/client";
 
 // เพิ่ม keyframes สำหรับ animation
 const modalStyles = `
@@ -48,6 +49,10 @@ function EmployeeTableClient({
   );
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [courseStatuses, setCourseStatuses] = useState<{ course_name: string; status: string; date_completed?: string; expiry_date?: string; }[]>([]);
+  const [loadingCourses, setLoadingCourses] = useState(false);
+  const [showCourseModal, setShowCourseModal] = useState(false);
+  const [courseModalEmployee, setCourseModalEmployee] = useState<Employee | null>(null);
 
   const loadEmployees = async (page: number, searchQuery: string) => {
     const result = await getEmployees(page, 15, searchQuery);
@@ -80,6 +85,36 @@ function EmployeeTableClient({
     return new Date(dateString).toLocaleDateString("th-TH");
   };
 
+  const fetchEmployeeCourseStatuses = async (employeeId: string) => {
+    setLoadingCourses(true);
+    const supabase = createClient();
+    
+    const { data, error } = await supabase
+      .from("view_employee_course_statuses")
+      .select("*")
+      .eq("employee_id", employeeId)
+      .order("course_name");
+
+    setLoadingCourses(false);
+
+    if (error) {
+      console.error("Error fetching course statuses:", error);
+      toast.error("เกิดข้อผิดพลาดในการโหลดข้อมูลหลักสูตร");
+      setCourseStatuses([]);
+    } else {
+      setCourseStatuses(data || []);
+    }
+  };
+
+  // useEffect สำหรับดึงข้อมูลหลักสูตรเมื่อเลือกพนักงาน
+  useEffect(() => {
+    if (courseModalEmployee && showCourseModal) {
+      fetchEmployeeCourseStatuses(courseModalEmployee.employee_id);
+    } else {
+      setCourseStatuses([]);
+    }
+  }, [courseModalEmployee, showCourseModal]);
+
   const handleEdit = () => {
     if (selectedEmployee) {
       setIsEditModalOpen(true);
@@ -89,6 +124,18 @@ function EmployeeTableClient({
   const handleCloseModal = () => {
     setSelectedEmployee(null);
     setIsEditModalOpen(false);
+  };
+
+  const handleShowCourseModal = (employee: Employee, e: React.MouseEvent) => {
+    e.stopPropagation(); // ป้องกันไม่ให้เปิด employee detail modal
+    setCourseModalEmployee(employee);
+    setShowCourseModal(true);
+  };
+
+  const handleCloseCourseModal = () => {
+    setShowCourseModal(false);
+    setCourseModalEmployee(null);
+    setCourseStatuses([]);
   };
 
   const handleSaveEdit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -250,8 +297,11 @@ function EmployeeTableClient({
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
                       {formatDate(employee.start_date)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
-                      {employee.course_progress_summary || "-"}
+                    <td 
+                      className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 border-b cursor-pointer hover:text-blue-800 hover:underline"
+                      onClick={(e) => handleShowCourseModal(employee, e)}
+                    >
+                      {employee.course_progress_summary || "ดูสถานะอบรม"}
                     </td>
                   </tr>
                 ))
@@ -756,6 +806,120 @@ function EmployeeTableClient({
                   </Button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Course Status Modal */}
+      {courseModalEmployee && showCourseModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div 
+            className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto transform transition-all duration-300 ease-out scale-100"
+            style={{
+              animation: 'modalFadeIn 0.3s ease-out'
+            }}
+          >
+            <div className="p-8">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-800">
+                    สถานะการอบรมหลักสูตร
+                  </h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {courseModalEmployee.prefix_th} {courseModalEmployee.first_name_th} {courseModalEmployee.last_name_th}
+                  </p>
+                </div>
+                <button
+                  onClick={handleCloseCourseModal}
+                  className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors duration-200"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Course Status Table */}
+              <div className="mt-4">
+                {loadingCourses ? (
+                  <div className="flex justify-center items-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                    <span className="ml-3 text-gray-600">กำลังโหลดข้อมูลหลักสูตร...</span>
+                  </div>
+                ) : courseStatuses.length === 0 ? (
+                  <div className="text-center py-12 text-gray-500">
+                    <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    <p className="text-lg font-medium">ไม่มีข้อมูลหลักสูตรที่ต้องอบรม</p>
+                    <p className="text-sm">พนักงานคนนี้ไม่มีหลักสูตรที่ต้องอบรมตามตำแหน่งงาน</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200 border border-gray-300 rounded-lg">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-300">
+                            หลักสูตร
+                          </th>
+                          <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-300">
+                            วันที่อบรม
+                          </th>
+                          <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-300">
+                            วันหมดอายุ
+                          </th>
+                          <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            สถานะ
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {courseStatuses.map((course, index) => (
+                          <tr key={index} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 text-sm font-medium text-gray-900 border-r border-gray-300">
+                              {course.course_name}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-900 border-r border-gray-300">
+                              {course.date_completed ? formatDate(course.date_completed) : "-"}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-900 border-r border-gray-300">
+                              {course.expiry_date ? formatDate(course.expiry_date) : "-"}
+                            </td>
+                            <td className="px-6 py-4 text-sm border-gray-300">
+                              <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${
+                                course.status === 'ปกติ' 
+                                  ? 'bg-green-100 text-green-800'
+                                  : course.status === 'ใกล้หมดอายุ'
+                                  ? 'bg-yellow-100 text-yellow-800' 
+                                  : course.status === 'หมดอายุแล้ว'
+                                  ? 'bg-red-100 text-red-800'
+                                  : 'bg-gray-100 text-gray-800'
+                              }`}>
+                                {course.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+              
+              {/* Footer */}
+              <div className="pt-6 border-t border-gray-100">
+                <div className="flex justify-end">
+                  <Button
+                    variant="outline"
+                    onClick={handleCloseCourseModal}
+                    className="px-6 py-2"
+                  >
+                    ปิด
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         </div>

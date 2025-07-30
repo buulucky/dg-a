@@ -65,7 +65,7 @@ export function LoginForm({
       }
 
       // เข้าสู่ระบบสำเร็จ
-      router.push("/");
+      router.push("/employee");
     } catch (error: unknown) {
       if (error instanceof Error) {
         if (error.message.includes("Invalid login credentials")) {

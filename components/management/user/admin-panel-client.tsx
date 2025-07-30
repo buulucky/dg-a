@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
-import { type UserProfile } from "../../app/admin/user-management/actions";
+import { type UserProfile } from "@/app/admin/management/user/actions";
 import { toast } from "@/lib/toast";
 
 interface AdminPanelClientProps {

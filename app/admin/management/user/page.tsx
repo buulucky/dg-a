@@ -1,4 +1,4 @@
-import { AdminPanelClient } from "../../../components/user-management/admin-panel-client";
+import { AdminPanelClient } from "@/components/management/user/admin-panel-client";
 import { getCurrentUser, getAllUsers } from "./actions";
 
 // บอก Next.js ว่าหน้านี้ต้อง dynamic rendering

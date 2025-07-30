@@ -67,7 +67,7 @@ export default function AddCourseButton({ onCourseAdded }: AddCourseButtonProps)
       const { data, error } = await supabase
         .from("training_courses")
         .select("course_id, course_name, validity_period_days")
-        .order("course_name");
+        .order("course_id");
 
       setLoadingCourses(false);
 

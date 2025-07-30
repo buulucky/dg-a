@@ -1,4 +1,4 @@
-import POTableClient from "../../../components/po/POTableClient";
+import POTableClient from "@/components/management/po/POTableClient";
 import { getPOs, getUserRole } from "./actions";
 
 export const dynamic = 'force-dynamic';

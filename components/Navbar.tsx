@@ -88,21 +88,21 @@ export default function Navbar() {
                 {showManageDropdown && (
                   <div className="absolute top-full right-0 mt-1 bg-white text-gray-800 rounded-lg shadow-lg min-w-[180px] z-50">
                     <Link
-                      href="/admin/user-management"
+                      href="/admin/management/user"
                       className="block px-4 py-2 hover:bg-purple-50 hover:text-purple-700 transition first:rounded-t-lg"
                       onClick={() => setShowManageDropdown(false)}
                     >
                       จัดการผู้ใช้งานระบบ
                     </Link>
                     <Link
-                      href="/admin/po-management"
+                      href="/admin/management/po"
                       className="block px-4 py-2 hover:bg-purple-50 hover:text-purple-700 transition last:rounded-b-lg"
                       onClick={() => setShowManageDropdown(false)}
                     >
                       จัดการ PO
                     </Link>
                     <Link
-                      href="/admin/course-management"
+                      href="/admin/management/course"
                       className="block px-4 py-2 hover:bg-purple-50 hover:text-purple-700 transition last:rounded-b-lg"
                       onClick={() => setShowManageDropdown(false)}
                     >

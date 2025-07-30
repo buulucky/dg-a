@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "@/lib/toast";
-import AddCourseButton from "@/components/course-management/AddCourseButton";
+import AddCourseButton from "@/components/management/course/AddCourseButton";
 
 interface PositionCourse {
   position_name: string;

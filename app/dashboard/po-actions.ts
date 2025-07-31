@@ -142,20 +142,22 @@ export async function getPOEmployeeStats(poId: number): Promise<POEmployeeStats 
       .from('view_employee_contracts_relationship')
       .select('*', { count: 'exact' })
       .eq('po_id', poId)
-      .eq('status_code', 'ACTIVE')
+      // ลบเงื่อนไข status_code = 'ACTIVE' เพื่อให้แสดงทุกคนที่เข้างานในเดือนนี้
       .gte('start_date', `${currentMonth}-01`)
       .lt('start_date', nextMonth);
 
     console.log("getPOEmployeeStats: Employees in this month", employeesInThisMonth);
 
-    // พนักงานออกเดือนนี้ (ดึงจากตาราง employee_contracts ที่มี end_date)
+    // พนักงานออกเดือนนี้ (ดึงจาก employee_contracts โดยตรง)
     const { count: employeesOutThisMonth } = await supabase
       .from('employee_contracts')
       .select('*', { count: 'exact' })
       .eq('po_id', poId)
-      .not('end_date', 'is', null)
+      .not('end_date', 'is', null) // มี end_date (ออกแล้ว)
       .gte('end_date', `${currentMonth}-01`)
       .lt('end_date', nextMonth);
+
+    console.log("getPOEmployeeStats: Employees out this month", employeesOutThisMonth);
 
     // คำนวณขาดเหลือ
     const targetEmployees = poData.employee_count;
@@ -184,7 +186,7 @@ export async function getPOEmployeeStats(poId: number): Promise<POEmployeeStats 
         .from('view_employee_contracts_relationship')
         .select('*', { count: 'exact' })
         .eq('po_id', poId)
-        .eq('status_code', 'ACTIVE')
+        // ลบเงื่อนไข status_code = 'ACTIVE' เพื่อให้แสดงทุกคนที่เข้างานในเดือนนั้น
         .gte('start_date', `${monthStr}-01`)
         .lt('start_date', monthEnd);
 
@@ -192,7 +194,7 @@ export async function getPOEmployeeStats(poId: number): Promise<POEmployeeStats 
         .from('employee_contracts')
         .select('*', { count: 'exact' })
         .eq('po_id', poId)
-        .not('end_date', 'is', null)
+        .not('end_date', 'is', null) // มี end_date (ออกแล้ว)
         .gte('end_date', `${monthStr}-01`)
         .lt('end_date', monthEnd);
 
@@ -203,16 +205,16 @@ export async function getPOEmployeeStats(poId: number): Promise<POEmployeeStats 
       });
     }
 
-    // รายชื่อพนักงานเข้าล่าสุด
+    // รายชื่อพนักงานเข้าล่าสุด (แสดงทุกคนที่เข้างาน ไม่จำกัดเฉพาะ ACTIVE)
     const { data: recentEmployeesIn } = await supabase
       .from('view_employee_contracts_relationship')
       .select('employee_id, first_name_th, last_name_th, start_date')
       .eq('po_id', poId)
-      .eq('status_code', 'ACTIVE')
+      // ลบเงื่อนไข status_code = 'ACTIVE' เพื่อให้แสดงทุกคนที่เข้างาน
       .order('start_date', { ascending: false })
       .limit(5);
 
-    // รายชื่อพนักงานออกล่าสุด (ดึงจากตาราง employee_contracts ที่มี end_date)
+    // รายชื่อพนักงานออกล่าสุด (ดึงจาก employee_contracts พร้อม join ข้อมูลพนักงาน)
     const { data: recentEmployeesOutData } = await supabase
       .from('employee_contracts')
       .select(`
@@ -221,7 +223,7 @@ export async function getPOEmployeeStats(poId: number): Promise<POEmployeeStats 
         employees!inner(first_name_th, last_name_th)
       `)
       .eq('po_id', poId)
-      .not('end_date', 'is', null)
+      .not('end_date', 'is', null) // มี end_date (ออกแล้ว)
       .order('end_date', { ascending: false })
       .limit(5);
 

@@ -167,13 +167,13 @@ export default function PODashboardClient({ userProfile, isAdmin }: PODashboardC
                   <span className="font-medium">ตำแหน่ง:</span> {stats.poInfo.job_position_name}
                 </div>
                 <div>
-                  <span className="font-medium">หน้าที่:</span> {stats.poInfo.function_code}
+                  <span className="font-medium">กลุ่มงาน:</span> {stats.poInfo.function_code}
                 </div>
                 <div>
                   <span className="font-medium">ระยะเวลา:</span> {new Date(stats.poInfo.start_date).toLocaleDateString('th-TH')} - {new Date(stats.poInfo.end_date).toLocaleDateString('th-TH')}
                 </div>
                 <div>
-                  <span className="font-medium">เป้าหมายพนักงาน:</span> {stats.poInfo.employee_count} คน
+                  <span className="font-medium">จำนวนพนักงาน:</span> {stats.poInfo.employee_count} คน
                 </div>
               </div>
             </CardContent>

@@ -1,5 +1,6 @@
 'use server';
 
+// Force server restart v2 - updated month calculation logic 
 import { createClient } from "@/lib/supabase/server";
 
 export interface DashboardStats {
@@ -50,8 +51,12 @@ export async function getDashboardStats(companyId?: number): Promise<DashboardSt
     const { count: totalPOs } = await totalPOsQuery;
 
     // PO ใหม่เดือนนี้
-    const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
-    const nextMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString().slice(0, 10);
+    const currentDate = new Date();
+    const currentMonth = currentDate.toISOString().slice(0, 7); // YYYY-MM
+    const nextMonthDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
+    const nextMonth = nextMonthDate.toISOString().slice(0, 10); // YYYY-MM-DD
+    
+    console.log(`Current month range: ${currentMonth}-01 to ${nextMonth}`);
     
     let newPOsQuery = supabase
       .from('view_po_relationship')
@@ -77,17 +82,52 @@ export async function getDashboardStats(companyId?: number): Promise<DashboardSt
     }
     
     const { count: expiredPOsThisMonth } = await expiredPOsQuery;
+    
+    console.log(`This month stats - New POs: ${newPOsThisMonth}, Expired POs: ${expiredPOsThisMonth}`);
 
-    // ข้อมูลรายเดือน (12 เดือนย้อนหลัง)
+    // ข้อมูลรายเดือน (6 เดือนย้อนหลัง) - ใช้วิธีง่ายๆ
     const monthlyData: Array<{ month: string; newPOs: number; expiredPOs: number }> = [];
     
-    for (let i = 11; i >= 0; i--) {
-      const date = new Date();
-      date.setMonth(date.getMonth() - i);
-      const monthStr = date.toISOString().slice(0, 7);
-      const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 1).toISOString().slice(0, 10);
+    // สร้างรายการเดือน 6 เดือนย้อนหลัง
+    const months: string[] = [];
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonthIndex = now.getMonth(); // 0-based
+    
+    for (let i = 5; i >= 0; i--) {
+      // คำนวณเดือนและปีที่ต้องการ
+      let targetMonth = currentMonthIndex - i;
+      let targetYear = currentYear;
       
-      // PO ใหม่ในเดือนนี้
+      // จัดการกรณีที่เดือนติดลบ (ข้ามปี)
+      while (targetMonth < 0) {
+        targetMonth += 12;
+        targetYear -= 1;
+      }
+      
+      // สร้างรูปแบบ YYYY-MM
+      const monthStr = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}`;
+      months.push(monthStr);
+    }
+    
+    console.log('Months to process:', months);
+    console.log('Current date info:', { 
+      now: now.toISOString(), 
+      currentYear, 
+      currentMonthIndex,
+      expectedMonths: ['2025-02', '2025-03', '2025-04', '2025-05', '2025-06', '2025-07']
+    });
+    
+    // ประมวลผลแต่ละเดือน
+    for (const monthStr of months) {
+      // สร้างวันที่สิ้นสุดเดือน
+      const [year, month] = monthStr.split('-');
+      const nextMonthDate = new Date(parseInt(year), parseInt(month), 1); // เดือนถัดไป
+      const monthEnd = nextMonthDate.toISOString().slice(0, 10);
+      
+      console.log(`Processing month: ${monthStr}, range: ${monthStr}-01 to ${monthEnd}`);
+      
+      // Query PO ใหม่
       let monthNewPOsQuery = supabase
         .from('view_po_relationship')
         .select('*', { count: 'exact' })
@@ -100,7 +140,7 @@ export async function getDashboardStats(companyId?: number): Promise<DashboardSt
       
       const { count: monthNewPOs } = await monthNewPOsQuery;
 
-      // PO ที่หมดอายุในเดือนนี้
+      // Query PO หมดอายุ
       let monthExpiredPOsQuery = supabase
         .from('view_po_relationship')
         .select('*', { count: 'exact' })
@@ -113,12 +153,16 @@ export async function getDashboardStats(companyId?: number): Promise<DashboardSt
       
       const { count: monthExpiredPOs } = await monthExpiredPOsQuery;
 
+      console.log(`Month ${monthStr}: New POs: ${monthNewPOs}, Expired POs: ${monthExpiredPOs}`);
+
       monthlyData.push({
         month: monthStr,
         newPOs: monthNewPOs || 0,
         expiredPOs: monthExpiredPOs || 0
       });
     }
+    
+    console.log('Final monthly data:', monthlyData);
 
     // รายชื่อ PO ใหม่ล่าสุด (5 รายการล่าสุด)
     let recentNewPOsQuery = supabase

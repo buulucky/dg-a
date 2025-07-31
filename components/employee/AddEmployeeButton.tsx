@@ -375,26 +375,41 @@ export default function AddEmployeeButton({
                   if (onEmployeeAdded) onEmployeeAdded();
                 } catch (err: unknown) {
                   console.error("Full error object:", err);
+                  console.error("Error type:", typeof err);
+                  console.error("Error constructor:", err?.constructor?.name);
+                  
+                  let errorMessage = "เกิดข้อผิดพลาดในการบันทึกข้อมูล";
+                  
                   if (err instanceof Error) {
                     console.error("Error message:", err.message);
-                    toast.error(
-                      "เกิดข้อผิดพลาดในการบันทึกข้อมูล: " + err.message
-                    );
+                    errorMessage += ": " + err.message;
+                  } else if (err && typeof err === 'object') {
+                    // ตรวจสอบว่าเป็น Supabase error หรือไม่
+                    const error = err as { message?: string; error_description?: string; details?: string };
+                    if (error.message) {
+                      errorMessage += ": " + error.message;
+                    } else if (error.error_description) {
+                      errorMessage += ": " + error.error_description;
+                    } else if (error.details) {
+                      errorMessage += ": " + error.details;
+                    } else {
+                      console.error("Error details:", JSON.stringify(err, null, 2));
+                      errorMessage += ": Unknown error";
+                    }
+                  } else if (typeof err === 'string') {
+                    errorMessage += ": " + err;
                   } else {
-                    console.error(
-                      "Error details:",
-                      JSON.stringify(err, null, 2)
-                    );
-                    toast.error(
-                      "เกิดข้อผิดพลาดในการบันทึกข้อมูล: Unknown error"
-                    );
+                    console.error("Unexpected error type:", err);
+                    errorMessage += ": Unknown error type";
                   }
+                  
+                  toast.error(errorMessage);
                 }
               }}
             >
               <div className="border border-gray-300 rounded-md p-3 bg-gray-50 mb-2">
                 <Label htmlFor="personal_id" className="mb-1 block">
-                  เลขบัตรประชาชน (personal_id)
+                  เลขบัตรประชาชน
                 </Label>
                 <div className="flex gap-2 items-end">
                   <Input
@@ -424,8 +439,8 @@ export default function AddEmployeeButton({
               </div>
               <div className="border border-gray-300 rounded-md p-3 bg-gray-50">
                 <div className="flex gap-2">
-                  <div className="w-20 flex-shrink-0">
-                    <Label htmlFor="prefix_th">คำนำหน้าชื่อ</Label>
+                  <div className="w-23 flex-shrink-0">
+                    <Label htmlFor="prefix_th">คำนำหน้า</Label>
                     <Select
                       id="prefix_th"
                       required
@@ -476,10 +491,11 @@ export default function AddEmployeeButton({
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <div className="w-20 flex-shrink-0">
-                    <Label htmlFor="prefix_en">Prefix (EN)</Label>
+                  <div className="w-23 flex-shrink-0">
+                    <Label htmlFor="prefix_en">คำนำหน้า</Label>
                     <Select
                       id="prefix_en"
+                      required
                       disabled={!canProceed}
                       value={formData.prefix_en}
                       onChange={(e) =>
@@ -488,9 +504,8 @@ export default function AddEmployeeButton({
                       className="border rounded py-1 text-sm w-20"
                     >
                       <option value="">-- เลือก --</option>
-                      <option value="Mr">Mr</option>
-                      <option value="Mrs">Mrs</option>
-                      <option value="Ms">Ms</option>
+                      <option value="Mr.">Mr.</option>
+                      <option value="Mrs.">Mrs.</option>
                       <option value="Miss">Miss</option>
                     </Select>
                   </div>
@@ -499,6 +514,7 @@ export default function AddEmployeeButton({
                     <Input
                       id="first_name_en"
                       type="text"
+                      required
                       disabled={!canProceed}
                       value={formData.first_name_en}
                       onChange={(e) =>
@@ -514,6 +530,7 @@ export default function AddEmployeeButton({
                     <Input
                       id="last_name_en"
                       type="text"
+                      required
                       disabled={!canProceed}
                       value={formData.last_name_en}
                       onChange={(e) =>
@@ -526,7 +543,7 @@ export default function AddEmployeeButton({
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="birth_date">วันเกิด (birth_date)</Label>
+                  <Label htmlFor="birth_date">วันเกิด</Label>
                   <Input
                     id="birth_date"
                     type="date"
@@ -541,7 +558,7 @@ export default function AddEmployeeButton({
               </div>
               <div className="border border-gray-300 rounded-md p-3 bg-gray-50">
                 <div className="">
-                  <Label htmlFor="employee_id">รหัสพนักงาน (employee_id)</Label>
+                  <Label htmlFor="employee_id">รหัสพนักงาน</Label>
                   <div className="flex gap-2 items-end">
                     <Input
                       id="employee_id"

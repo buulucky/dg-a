@@ -38,10 +38,6 @@ export default function ChangeStatusButton({ employeeId, onStatusChange }: Chang
       setError("กรุณาเลือกสถานะใหม่");
       return;
     }
-    if (!reason.trim()) {
-      setError("กรุณาระบุเหตุผลการเปลี่ยนสถานะ");
-      return;
-    }
     if (!date) {
       setError("กรุณาเลือกวันที่เปลี่ยนสถานะ");
       return;
@@ -53,7 +49,7 @@ export default function ChangeStatusButton({ employeeId, onStatusChange }: Chang
       const result = await updateEmployeeContractStatus({
         employeeId,
         statusId: status,
-        reason,
+        reason: reason.trim() || "", // ส่งค่า reason เป็น "" หากไม่ได้กรอก
         date,
       });
       if (result.error) {
@@ -64,7 +60,7 @@ export default function ChangeStatusButton({ employeeId, onStatusChange }: Chang
       setSuccess(true);
       setShowModal(false);
       toast.success("เปลี่ยนสถานะพนักงานสำเร็จ");
-      if (onStatusChange) onStatusChange(status, reason, date);
+      if (onStatusChange) onStatusChange(status, reason.trim() || "", date);
     } catch (e) {
       const errorMessage = (e instanceof Error && e.message) ? e.message : "เกิดข้อผิดพลาด";
       setError(errorMessage);

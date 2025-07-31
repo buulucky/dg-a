@@ -11,19 +11,70 @@ interface MonthlyChartProps {
 }
 
 export default function MonthlyChart({ data }: MonthlyChartProps) {
+  // สร้างข้อมูل 6 เดือนย้อนหลังแบบต่อเนื่อง
+  const generateContinuousMonths = () => {
+    const result: MonthlyData[] = [];
+    const dataMap = new Map<string, MonthlyData>();
+    
+    // สร้าง Map จากข้อมูลที่ได้รับ
+    data.forEach(item => {
+      dataMap.set(item.month, item);
+    });
+    
+    // สร้าง 6 เดือนย้อนหลังแบบต่อเนื่อง
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth(); // 0-based (July = 6)
+    
+    for (let i = 5; i >= 0; i--) {
+      // คำนวณเดือนและปีที่ต้องการ
+      let targetMonth = currentMonth - i;
+      let targetYear = currentYear;
+      
+      // จัดการกรณีที่เดือนติดลบ (ข้ามปี)
+      while (targetMonth < 0) {
+        targetMonth += 12;
+        targetYear -= 1;
+      }
+      
+      // สร้างรูปแบบ YYYY-MM
+      const monthStr = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}`;
+      
+      // ใช้ข้อมูลที่มี หรือสร้างใหม่เป็น 0
+      const existingData = dataMap.get(monthStr);
+      result.push({
+        month: monthStr,
+        newPOs: existingData?.newPOs || 0,
+        expiredPOs: existingData?.expiredPOs || 0
+      });
+    }
+    
+    return result;
+  };
+  
+  const chartData = generateContinuousMonths();
+  
+  console.log('Original data:', data);
+  console.log('Chart data (continuous 6 months):', chartData);
+
   // Format month for display (YYYY-MM to MMM YYYY)
   const formatMonth = (monthStr: string) => {
     const [year, month] = monthStr.split('-');
-    const date = new Date(parseInt(year), parseInt(month) - 1);
-    return date.toLocaleDateString('th-TH', { 
-      month: 'short', 
-      year: 'numeric' 
-    });
+    
+    // ใช้การแปลงเดือนแบบไทยเอง
+    const monthNames = [
+      'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
+      'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'
+    ];
+    
+    const monthIndex = parseInt(month) - 1;
+    return `${monthNames[monthIndex]} ${year}`;
   };
 
   // หาค่าสูงสุดเพื่อกำหนดความสูงของแท่งกราฟ
   const maxValue = Math.max(
-    ...data.map(item => Math.max(item.newPOs, item.expiredPOs))
+    ...chartData.map(item => Math.max(item.newPOs, item.expiredPOs)),
+    1 // ป้องกันกรณีที่ maxValue เป็น 0
   );
 
   const getBarHeight = (value: number) => {
@@ -32,9 +83,9 @@ export default function MonthlyChart({ data }: MonthlyChartProps) {
 
   return (
     <div className="w-full">
-      <div className="flex items-end justify-between h-64 border-b border-l border-gray-200 relative">
+      <div className="flex items-end justify-between h-72 border-b border-l border-gray-200 relative">
         {/* Y-axis labels */}
-        <div className="absolute left-0 top-0 bottom-0 flex flex-col justify-between text-xs text-gray-500 -ml-8">
+        <div className="absolute left-0 top-0 bottom-8 flex flex-col justify-between text-xs text-gray-500 -ml-8">
           <span>{maxValue}</span>
           <span>{Math.floor(maxValue * 0.75)}</span>
           <span>{Math.floor(maxValue * 0.5)}</span>
@@ -43,16 +94,16 @@ export default function MonthlyChart({ data }: MonthlyChartProps) {
         </div>
 
         {/* Bars */}
-        {data.map((item, index) => (
-          <div key={`${item.month}-${index}`} className="flex flex-col items-center flex-1 px-1">
-            <div className="flex items-end justify-center w-full mb-2" style={{ height: '200px' }}>
+        {chartData.map((item, index) => (
+          <div key={`${item.month}-${index}`} className="flex flex-col items-center flex-1">
+            <div className="flex items-end justify-center w-full mb-3" style={{ height: '200px' }}>
               {/* New POs Bar */}
               <div 
                 className="bg-green-500 mx-0.5 rounded-t transition-all duration-300 hover:bg-green-600 relative group"
                 style={{ 
-                  height: `${getBarHeight(item.newPOs)}px`,
-                  width: '20px',
-                  minHeight: item.newPOs > 0 ? '2px' : '0'
+                  height: `${item.newPOs === 0 ? 8 : Math.max(getBarHeight(item.newPOs), 8)}px`,
+                  width: '16px',
+                  opacity: item.newPOs === 0 ? 0.3 : 1
                 }}
                 title={`เข้า: ${item.newPOs}`}
               >
@@ -66,9 +117,9 @@ export default function MonthlyChart({ data }: MonthlyChartProps) {
               <div 
                 className="bg-red-500 mx-0.5 rounded-t transition-all duration-300 hover:bg-red-600 relative group"
                 style={{ 
-                  height: `${getBarHeight(item.expiredPOs)}px`,
-                  width: '20px',
-                  minHeight: item.expiredPOs > 0 ? '2px' : '0'
+                  height: `${item.expiredPOs === 0 ? 8 : Math.max(getBarHeight(item.expiredPOs), 8)}px`,
+                  width: '16px',
+                  opacity: item.expiredPOs === 0 ? 0.3 : 1
                 }}
                 title={`ออก: ${item.expiredPOs}`}
               >
@@ -80,7 +131,7 @@ export default function MonthlyChart({ data }: MonthlyChartProps) {
             </div>
             
             {/* Month Label */}
-            <div className="text-xs text-gray-600 text-center transform -rotate-45 w-16">
+            <div className="text-xs text-gray-600 text-center leading-tight">
               {formatMonth(item.month)}
             </div>
           </div>

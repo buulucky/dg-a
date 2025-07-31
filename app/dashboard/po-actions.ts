@@ -165,22 +165,21 @@ export async function getPOEmployeeStats(poId: number): Promise<POEmployeeStats 
     const shortage = Math.max(0, targetEmployees - actualEmployees);
     const surplus = Math.max(0, actualEmployees - targetEmployees);
 
-    // ข้อมูลรายเดือน (12 เดือนย้อนหลัง)
+    // ข้อมูลรายเดือน (12 เดือนย้อนหลัง) โดยคำนวณเดือนด้วยตนเอง
     const monthlyData: Array<{ month: string; employeesIn: number; employeesOut: number }> = [];
-    const processedMonths = new Set<string>(); // ป้องกัน duplicate months
-    
-    for (let i = 11; i >= 0; i--) {
-      const date = new Date();
-      date.setMonth(date.getMonth() - i);
-      const monthStr = date.toISOString().slice(0, 7);
-      
-      // ข้ามถ้าเดือนนี้ประมวลผลแล้ว
-      if (processedMonths.has(monthStr)) {
-        continue;
+    const now = new Date();
+    const yearNow = now.getFullYear();
+    const monthNow = now.getMonth(); // 0-based
+    for (let offset = 11; offset >= 0; offset--) {
+      // คำนวณเดือนและปี
+      let m = monthNow - offset;
+      let y = yearNow;
+      while (m < 0) {
+        m += 12;
+        y -= 1;
       }
-      processedMonths.add(monthStr);
-      
-      const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 1).toISOString().slice(0, 10);
+      const monthStr = `${y}-${String(m + 1).padStart(2, '0')}`;
+      const monthEnd = new Date(y, m + 1, 1).toISOString().slice(0, 10);
 
       const { count: monthEmployeesIn } = await supabase
         .from('view_employee_contracts_relationship')

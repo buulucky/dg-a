@@ -36,6 +36,7 @@ export interface DashboardStats {
 
 export async function getDashboardStats(companyId?: number): Promise<DashboardStats> {
   const supabase = await createClient();
+  console.log('getDashboardStats v3: running updated logic');
 
   try {
     // PO ทั้งหมดที่ยัง Active (ยังไม่หมดอายุ)
@@ -88,33 +89,28 @@ export async function getDashboardStats(companyId?: number): Promise<DashboardSt
     // ข้อมูลรายเดือน (6 เดือนย้อนหลัง) - ใช้วิธีง่ายๆ
     const monthlyData: Array<{ month: string; newPOs: number; expiredPOs: number }> = [];
     
-    // สร้างรายการเดือน 6 เดือนย้อนหลัง
+    // สร้างรายการเดือน 6 เดือนย้อนหลัง (คำนวณด้วยตนเอง)
     const months: string[] = [];
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonthIndex = now.getMonth(); // 0-based
-    
-    for (let i = 5; i >= 0; i--) {
+    const today = new Date();
+    const yearNow = today.getFullYear();
+    const monthNow = today.getMonth(); // 0-based
+    for (let offset = 5; offset >= 0; offset--) {
       // คำนวณเดือนและปีที่ต้องการ
-      let targetMonth = currentMonthIndex - i;
-      let targetYear = currentYear;
-      
-      // จัดการกรณีที่เดือนติดลบ (ข้ามปี)
-      while (targetMonth < 0) {
-        targetMonth += 12;
-        targetYear -= 1;
+      let m = monthNow - offset;
+      let y = yearNow;
+      while (m < 0) {
+        m += 12;
+        y -= 1;
       }
-      
-      // สร้างรูปแบบ YYYY-MM
-      const monthStr = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}`;
+      const monthStr = `${y}-${String(m + 1).padStart(2, '0')}`;
       months.push(monthStr);
     }
     
     console.log('Months to process:', months);
     console.log('Current date info:', { 
-      now: now.toISOString(), 
-      currentYear, 
-      currentMonthIndex,
+      today: today.toISOString(), 
+      yearNow, 
+      monthNow,
       expectedMonths: ['2025-02', '2025-03', '2025-04', '2025-05', '2025-06', '2025-07']
     });
     

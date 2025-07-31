@@ -18,8 +18,8 @@ export interface POEmployeeStats {
   currentEmployees: number;
   employeesInThisMonth: number;
   employeesOutThisMonth: number;
-  shortage: number; // ขาดไป
-  surplus: number;  // เหลือ
+  shortage: number;
+  surplus: number;
   monthlyData: Array<{
     month: string;
     employeesIn: number;
@@ -123,40 +123,67 @@ export async function getPOEmployeeStats(poId: number): Promise<POEmployeeStats 
       return null;
     }
 
-    // พนักงานปัจจุบันใน PO นี้ (ACTIVE)
-    const { count: currentEmployees } = await supabase
-      .from('view_employee_contracts_relationship')
-      .select('*', { count: 'exact' })
-      .eq('po_id', poId)
-      .eq('status_code', 'ACTIVE');
+    // กำหนดช่วงเวลาสำหรับการ query
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    const currentMonthEnd = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString().slice(0, 10);
+    const now = new Date();
+    const twelveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 11, 1).toISOString().slice(0, 10);
+    const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString().slice(0, 10);
+
+    console.log("getPOEmployeeStats: Checking for month", currentMonth, "to", currentMonthEnd);
+
+    // Query ข้อมูลหลักแบบ parallel
+    const [
+      { count: currentEmployees },
+      { count: employeesInThisMonth },
+      { count: employeesOutThisMonth },
+      { data: monthlyInData },
+      { data: monthlyOutData }
+    ] = await Promise.all([
+      // พนักงานปัจจุบันใน PO นี้ (ACTIVE)
+      supabase
+        .from('view_employee_contracts_relationship')
+        .select('*', { count: 'exact' })
+        .eq('po_id', poId)
+        .eq('status_code', 'ACTIVE'),
+      
+      // พนักงานเข้าเดือนนี้
+      supabase
+        .from('view_employee_contracts_relationship')
+        .select('*', { count: 'exact' })
+        .eq('po_id', poId)
+        .gte('start_date', `${currentMonth}-01`)
+        .lt('start_date', currentMonthEnd),
+      
+      // พนักงานออกเดือนนี้
+      supabase
+        .from('employee_contracts')
+        .select('*', { count: 'exact' })
+        .eq('po_id', poId)
+        .not('end_date', 'is', null)
+        .gte('end_date', `${currentMonth}-01`)
+        .lt('end_date', currentMonthEnd),
+      
+      // ข้อมูลพนักงานเข้าทั้ง 12 เดือน
+      supabase
+        .from('view_employee_contracts_relationship')
+        .select('start_date')
+        .eq('po_id', poId)
+        .gte('start_date', twelveMonthsAgo)
+        .lt('start_date', nextMonth),
+      
+      // ข้อมูลพนักงานออกทั้ง 12 เดือน
+      supabase
+        .from('employee_contracts')
+        .select('end_date')
+        .eq('po_id', poId)
+        .not('end_date', 'is', null)
+        .gte('end_date', twelveMonthsAgo)
+        .lt('end_date', nextMonth)
+    ]);
 
     console.log("getPOEmployeeStats: Current employees count", currentEmployees);
-
-    // พนักงานเข้าเดือนนี้
-    const currentMonth = new Date().toISOString().slice(0, 7);
-    const nextMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString().slice(0, 10);
-
-    console.log("getPOEmployeeStats: Checking for month", currentMonth, "to", nextMonth);
-
-    const { count: employeesInThisMonth } = await supabase
-      .from('view_employee_contracts_relationship')
-      .select('*', { count: 'exact' })
-      .eq('po_id', poId)
-      // ลบเงื่อนไข status_code = 'ACTIVE' เพื่อให้แสดงทุกคนที่เข้างานในเดือนนี้
-      .gte('start_date', `${currentMonth}-01`)
-      .lt('start_date', nextMonth);
-
     console.log("getPOEmployeeStats: Employees in this month", employeesInThisMonth);
-
-    // พนักงานออกเดือนนี้ (ดึงจาก employee_contracts โดยตรง)
-    const { count: employeesOutThisMonth } = await supabase
-      .from('employee_contracts')
-      .select('*', { count: 'exact' })
-      .eq('po_id', poId)
-      .not('end_date', 'is', null) // มี end_date (ออกแล้ว)
-      .gte('end_date', `${currentMonth}-01`)
-      .lt('end_date', nextMonth);
-
     console.log("getPOEmployeeStats: Employees out this month", employeesOutThisMonth);
 
     // คำนวณขาดเหลือ
@@ -165,13 +192,12 @@ export async function getPOEmployeeStats(poId: number): Promise<POEmployeeStats 
     const shortage = Math.max(0, targetEmployees - actualEmployees);
     const surplus = Math.max(0, actualEmployees - targetEmployees);
 
-    // ข้อมูลรายเดือน (12 เดือนย้อนหลัง) โดยคำนวณเดือนด้วยตนเอง
+    // สร้างข้อมูลรายเดือนโดยการจัดกลุ่มข้อมูลที่ได้
     const monthlyData: Array<{ month: string; employeesIn: number; employeesOut: number }> = [];
-    const now = new Date();
     const yearNow = now.getFullYear();
     const monthNow = now.getMonth(); // 0-based
+    
     for (let offset = 11; offset >= 0; offset--) {
-      // คำนวณเดือนและปี
       let m = monthNow - offset;
       let y = yearNow;
       while (m < 0) {
@@ -179,52 +205,49 @@ export async function getPOEmployeeStats(poId: number): Promise<POEmployeeStats 
         y -= 1;
       }
       const monthStr = `${y}-${String(m + 1).padStart(2, '0')}`;
-      const monthEnd = new Date(y, m + 1, 1).toISOString().slice(0, 10);
-
-      const { count: monthEmployeesIn } = await supabase
-        .from('view_employee_contracts_relationship')
-        .select('*', { count: 'exact' })
-        .eq('po_id', poId)
-        // ลบเงื่อนไข status_code = 'ACTIVE' เพื่อให้แสดงทุกคนที่เข้างานในเดือนนั้น
-        .gte('start_date', `${monthStr}-01`)
-        .lt('start_date', monthEnd);
-
-      const { count: monthEmployeesOut } = await supabase
-        .from('employee_contracts')
-        .select('*', { count: 'exact' })
-        .eq('po_id', poId)
-        .not('end_date', 'is', null) // มี end_date (ออกแล้ว)
-        .gte('end_date', `${monthStr}-01`)
-        .lt('end_date', monthEnd);
+      
+      // นับจากข้อมูลที่ query มาแล้ว
+      const monthEmployeesIn = (monthlyInData || []).filter(emp => 
+        emp.start_date?.startsWith(monthStr)
+      ).length;
+      
+      const monthEmployeesOut = (monthlyOutData || []).filter(emp => 
+        emp.end_date?.startsWith(monthStr)
+      ).length;
 
       monthlyData.push({
         month: monthStr,
-        employeesIn: monthEmployeesIn || 0,
-        employeesOut: monthEmployeesOut || 0
+        employeesIn: monthEmployeesIn,
+        employeesOut: monthEmployeesOut
       });
     }
 
-    // รายชื่อพนักงานเข้าล่าสุด (แสดงทุกคนที่เข้างาน ไม่จำกัดเฉพาะ ACTIVE)
-    const { data: recentEmployeesIn } = await supabase
-      .from('view_employee_contracts_relationship')
-      .select('employee_id, first_name_th, last_name_th, start_date')
-      .eq('po_id', poId)
-      // ลบเงื่อนไข status_code = 'ACTIVE' เพื่อให้แสดงทุกคนที่เข้างาน
-      .order('start_date', { ascending: false })
-      .limit(5);
-
-    // รายชื่อพนักงานออกล่าสุด (ดึงจาก employee_contracts พร้อม join ข้อมูลพนักงาน)
-    const { data: recentEmployeesOutData } = await supabase
-      .from('employee_contracts')
-      .select(`
-        employee_id,
-        end_date,
-        employees!inner(first_name_th, last_name_th)
-      `)
-      .eq('po_id', poId)
-      .not('end_date', 'is', null) // มี end_date (ออกแล้ว)
-      .order('end_date', { ascending: false })
-      .limit(5);
+    // Query ข้อมูลแบบ parallel เพื่อลดเวลาโหลด
+    const [
+      { data: recentEmployeesIn },
+      { data: recentEmployeesOutData }
+    ] = await Promise.all([
+      // รายชื่อพนักงานเข้าล่าสุด
+      supabase
+        .from('view_employee_contracts_relationship')
+        .select('employee_id, first_name_th, last_name_th, start_date')
+        .eq('po_id', poId)
+        .order('start_date', { ascending: false })
+        .limit(5),
+      
+      // รายชื่อพนักงานออกล่าสุด
+      supabase
+        .from('employee_contracts')
+        .select(`
+          employee_id,
+          end_date,
+          employees!inner(first_name_th, last_name_th)
+        `)
+        .eq('po_id', poId)
+        .not('end_date', 'is', null)
+        .order('end_date', { ascending: false })
+        .limit(5)
+    ]);
 
     // แปลงรูปแบบข้อมูลให้ตรงกับ interface
     const recentEmployeesOut = recentEmployeesOutData?.map(item => ({

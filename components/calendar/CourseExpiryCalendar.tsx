@@ -117,12 +117,12 @@ export default function CourseExpiryCalendar() {
         color: 'white',
         border: '2px solid rgba(255,255,255,0.3)',
         fontWeight: 'bold',
-        textAlign: 'center',
+        textAlign: 'center', // ต้องเป็น 'center' ไม่ใช่ string อะไรก็ได้
         minHeight: '40px',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center'
-      }
+        justifyContent: 'center',
+      } as React.CSSProperties // cast ให้ตรง type
     };
   };
 

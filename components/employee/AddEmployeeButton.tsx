@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
-import { createClient } from "@/lib/supabase/client";
 import { useUser } from "@/hooks/useUser";
 import { toast } from "@/lib/toast";
 
@@ -60,10 +59,11 @@ export default function AddEmployeeButton({
     formData.first_name_th &&
     formData.last_name_th &&
     formData.birth_date &&
-    formData.start_date && // เพิ่มการตรวจสอบวันที่เริ่มงาน
+    formData.start_date &&
     personalId.length === 13 &&
     employeeId.length > 0 &&
-    selectedPoId.length > 0;
+    selectedPoId.length > 0 &&
+    poList.length > 0; // เพิ่มการตรวจสอบว่ามี PO หรือไม่
 
   // Helper to check if employeeId has been checked and is available
   const isEmpIdChecked = checkEmpResult === "สามารถใช้ได้";
@@ -104,36 +104,26 @@ export default function AddEmployeeButton({
     setCanProceed(false);
 
     try {
-      const supabase = createClient();
+      const response = await fetch("/api/employees", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          checkPersonalId: true,
+          personalId,
+        }),
+      });
 
-      // ขั้นแรก: ตรวจสอบว่ามีพนักงานคนนี้ในระบบหรือไม่
-      const { data: employeeData, error: employeeError } = await supabase
-        .from("employees")
-        .select(
-          `
-          personal_id, 
-          employee_id,
-          prefix_th,
-          first_name_th,
-          last_name_th,
-          prefix_en,
-          first_name_en,
-          last_name_en,
-          birth_date
-        `
-        )
-        .eq("personal_id", personalId)
-        .single();
+      const result = await response.json();
 
-      if (employeeError && employeeError.code !== "PGRST116") {
-        throw employeeError;
+      if (!response.ok) {
+        throw new Error(result?.error || "Unknown error occurred");
       }
 
-      if (!employeeData) {
-        // ไม่พบข้อมูล = สามารถเพิ่มพนักงานใหม่ได้
+      if (!result.employeeData) {
         setCheckResult("ไม่พบเลขบัตรประชาชนนี้ในระบบ - สามารถเพิ่มพนักงานได้");
         setCanProceed(true);
-        // ล้างข้อมูลฟอร์ม
         setFormData({
           prefix_th: "",
           first_name_th: "",
@@ -145,46 +135,24 @@ export default function AddEmployeeButton({
           start_date: "",
         });
         setEmployeeId("");
-        // โหลดรายการ PO จาก user ที่ล็อกอิน
         await loadPoList();
+      } else if (result.hasActiveContract) {
+        setCheckResult("พนักงานยังมีสัญญาที่ active อยู่ในระบบ - ไม่สามารถเพิ่มได้");
+        setCanProceed(false);
       } else {
-        // พบข้อมูล = ตรวจสอบว่ามีสัญญาที่ยัง active หรือไม่
-        const { data: activeContract, error: contractError } = await supabase
-          .from("employee_contracts")
-          .select("employee_contract_id, start_date, end_date")
-          .eq("employee_id", employeeData.employee_id)
-          .is("end_date", null)
-          .single();
-
-        if (contractError && contractError.code !== "PGRST116") {
-          throw contractError;
-        }
-
-        if (activeContract) {
-          // มีสัญญาที่ยัง active = ไม่สามารถเพิ่มได้
-          setCheckResult(
-            "พนักงานยังมีสัญญาที่ active อยู่ในระบบ - ไม่สามารถเพิ่มได้"
-          );
-          setCanProceed(false);
-        } else {
-          // ไม่มีสัญญาที่ active = สามารถเพิ่มได้ และเติมข้อมูลอัตโนมัติ
-          setCheckResult("พบข้อมูลพนักงานในระบบ - สามารถเพิ่มได้");
-          setCanProceed(true);
-
-          // เติมข้อมูลลงฟอร์มอัตโนมัติ
-          setFormData({
-            prefix_th: employeeData.prefix_th || "",
-            first_name_th: employeeData.first_name_th || "",
-            last_name_th: employeeData.last_name_th || "",
-            prefix_en: employeeData.prefix_en || "",
-            first_name_en: employeeData.first_name_en || "",
-            last_name_en: employeeData.last_name_en || "",
-            birth_date: employeeData.birth_date || "",
-            start_date: "", // ค่าเริ่มต้นสำหรับวันที่เริ่มงาน
-          });
-          // โหลดรายการ PO จาก user ที่ล็อกอิน
-          await loadPoList();
-        }
+        setCheckResult("พบข้อมูลพนักงานในระบบ - สามารถเพิ่มได้");
+        setCanProceed(true);
+        setFormData({
+          prefix_th: result.employeeData.prefix_th || "",
+          first_name_th: result.employeeData.first_name_th || "",
+          last_name_th: result.employeeData.last_name_th || "",
+          prefix_en: result.employeeData.prefix_en || "",
+          first_name_en: result.employeeData.first_name_en || "",
+          last_name_en: result.employeeData.last_name_en || "",
+          birth_date: result.employeeData.birth_date || "",
+          start_date: "",
+        });
+        await loadPoList();
       }
     } catch (error) {
       console.error("Error checking personal ID:", error);
@@ -198,10 +166,6 @@ export default function AddEmployeeButton({
   const loadPoList = async () => {
     setLoadingPo(true);
     try {
-      // Debug ข้อมูล user
-      console.log("User data:", user);
-      console.log("User loading state:", loading);
-
       // รอให้ user data load เสร็จก่อน
       if (loading) {
         console.log("User still loading, waiting...");
@@ -209,31 +173,42 @@ export default function AddEmployeeButton({
         return;
       }
 
-      // ใช้ company_id จาก useUser hook แทน
+      // ตรวจสอบว่ามี company_id หรือไม่
       if (!user?.company_id) {
-        console.log("No company_id found for user:", user);
+        console.error("No company_id found for user:", user);
         setPoList([]);
         return;
       }
 
       console.log("Loading PO for company_id:", user.company_id);
-      const supabase = createClient();
 
-      // ดึงรายการ PO ของบริษัทเดียวกัน
-      const { data: pos, error: poError } = await supabase
-        .from("po")
-        .select("po_id, po_number")
-        .eq("company_id", user.company_id);
-      // ลบ .eq("status_id", 1) เพราะตาราง po ไม่มีฟิลด์นี้
-      console.log("PO query result:", { pos, poError });
+      const response = await fetch("/api/employees", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          loadPoList: true,
+          companyId: user.company_id,
+        }),
+      });
 
-      if (poError) throw poError;
+      const result = await response.json();
 
-      setPoList(pos || []);
-      console.log("PO list set successfully:", pos?.length || 0, "items");
+      if (!response.ok) {
+        throw new Error(result?.error || "Failed to load PO list");
+      }
+
+      const poList = result.poList || [];
+      setPoList(poList);
+      
+      if (poList.length === 0) {
+        console.warn("No PO found for company_id:", user.company_id);
+      } else {
+        console.log("PO list loaded successfully:", poList.length, "items");
+      }
     } catch (error) {
       console.error("Error loading PO list:", error);
-      console.error("Error details:", JSON.stringify(error, null, 2));
       setPoList([]);
     } finally {
       setLoadingPo(false);
@@ -300,109 +275,43 @@ export default function AddEmployeeButton({
                 e.preventDefault();
                 if (!canProceed || !isFormFilled || !isEmpIdChecked || hasError)
                   return;
-                const supabase = createClient();
-                let employeeIdToUse = employeeId;
-                let isUpdate = false;
-                // const dummyStatusId = 1;
+
                 try {
-                  // Check if personal_id exists
-                  const { data: existingEmp } = await supabase
-                    .from("employees")
-                    .select("employee_id")
-                    .eq("personal_id", personalId)
-                    .single();
-                  if (existingEmp) {
-                    // Update existing employee
-                    isUpdate = true;
-                    const { error: updateError } = await supabase
-                      .from("employees")
-                      .update({
-                        prefix_th: formData.prefix_th,
-                        first_name_th: formData.first_name_th,
-                        last_name_th: formData.last_name_th,
-                        prefix_en: formData.prefix_en,
-                        first_name_en: formData.first_name_en,
-                        last_name_en: formData.last_name_en,
-                        birth_date: formData.birth_date,
-                      })
-                      .eq("personal_id", personalId);
-                    if (updateError) throw updateError;
-                    employeeIdToUse = existingEmp.employee_id;
-                  } else {
-                    // Insert new employee
-                    const { data: insertEmp, error: insertError } =
-                      await supabase
-                        .from("employees")
-                        .insert({
-                          personal_id: personalId,
-                          prefix_th: formData.prefix_th,
-                          first_name_th: formData.first_name_th,
-                          last_name_th: formData.last_name_th,
-                          prefix_en: formData.prefix_en,
-                          first_name_en: formData.first_name_en,
-                          last_name_en: formData.last_name_en,
-                          birth_date: formData.birth_date,
-                        })
-                        .select("employee_id")
-                        .single();
-                    if (insertError) throw insertError;
-                    employeeIdToUse = insertEmp.employee_id;
+                  const response = await fetch("/api/employees", {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                      personalId,
+                      formData,
+                      employeeId,
+                      selectedPoId,
+                      isUpdate: false,
+                    }),
+                  });
+
+                  const result = await response.json();
+
+                  console.log("API Response:", result);
+
+                  if (!response.ok) {
+                    const errorMessage = result?.error || "Unknown error occurred";
+                    throw new Error(errorMessage);
                   }
-                  // บันทึกข้อมูลสัญญาลง employee_contracts พร้อม employee_code
-                  const { error: contractError } = await supabase
-                    .from("employee_contracts")
-                    .insert({
-                      employee_id: employeeIdToUse,
-                      employee_code: employeeId, // เพิ่ม employee_code ลงในสัญญา
-                      po_id: selectedPoId,
-                      status_id: 1, // เพิ่ม status_id (1 = active)
-                      start_date: formData.start_date,
-                      // end_date จะเป็น null สำหรับสัญญาที่ active
-                    });
-                  if (contractError) throw contractError;
 
-                  // แสดงการแจ้งเตือนแบบ toast notification
-                  const successMessage = isUpdate
-                    ? "อัปเดตข้อมูลพนักงานสำเร็จ"
-                    : "เพิ่มพนักงานสำเร็จ";
-
-                  // ใช้ toast สำเร็จรูป
-                  toast.success(successMessage);
+                  toast.success("เพิ่มพนักงานสำเร็จ");
 
                   setOpen(false);
                   clearAll();
-                  // เรียก callback เพื่อรีเฟรชข้อมูลในตาราง
+
                   if (onEmployeeAdded) onEmployeeAdded();
                 } catch (err: unknown) {
-                  console.error("Full error object:", err);
-                  console.error("Error type:", typeof err);
-                  console.error("Error constructor:", err?.constructor?.name);
-                  
                   let errorMessage = "เกิดข้อผิดพลาดในการบันทึกข้อมูล";
-                  
                   if (err instanceof Error) {
-                    console.error("Error message:", err.message);
-                    errorMessage += ": " + err.message;
-                  } else if (err && typeof err === 'object') {
-                    // ตรวจสอบว่าเป็น Supabase error หรือไม่
-                    const error = err as { message?: string; error_description?: string; details?: string };
-                    if (error.message) {
-                      errorMessage += ": " + error.message;
-                    } else if (error.error_description) {
-                      errorMessage += ": " + error.error_description;
-                    } else if (error.details) {
-                      errorMessage += ": " + error.details;
-                    } else {
-                      console.error("Error details:", JSON.stringify(err, null, 2));
-                      errorMessage += ": Unknown error";
-                    }
-                  } else if (typeof err === 'string') {
-                    errorMessage += ": " + err;
-                  } else {
-                    console.error("Unexpected error type:", err);
-                    errorMessage += ": Unknown error type";
+                    errorMessage = err.message;
                   }
-                  
+                  console.error("Error saving employee:", err);
                   toast.error(errorMessage);
                 }
               }}
@@ -439,7 +348,7 @@ export default function AddEmployeeButton({
               </div>
               <div className="border border-gray-300 rounded-md p-3 bg-gray-50">
                 <div className="flex gap-2">
-                  <div className="w-23 flex-shrink-0">
+                  <div className="w-20 flex-shrink-0">
                     <Label htmlFor="prefix_th">คำนำหน้า</Label>
                     <Select
                       id="prefix_th"
@@ -491,7 +400,7 @@ export default function AddEmployeeButton({
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <div className="w-23 flex-shrink-0">
+                  <div className="w-20 flex-shrink-0">
                     <Label htmlFor="prefix_en">คำนำหน้า</Label>
                     <Select
                       id="prefix_en"
@@ -578,56 +487,41 @@ export default function AddEmployeeButton({
                         employeeId.length === 0 || checkingEmp || !canProceed
                       }
                       onClick={async () => {
+                        if (checkingEmp) return; // ป้องกัน double click
                         setCheckingEmp(true);
+                        let ignore = false;
                         try {
-                          const supabase = createClient();
-
-                          // ตรวจสอบว่ามี employee_code ซ้ำใน employee_contracts ที่มีสัญญา active หรือไม่
-                          const { data: existingContracts, error } =
-                            await supabase
-                              .from("employee_contracts")
-                              .select("employee_code, employee_id, po_id")
-                              .eq("employee_code", employeeId)
-                              .is("end_date", null); // เฉพาะสัญญาที่ active
-
-                          if (error && error.code !== "PGRST116") {
-                            throw error;
+                          if (!user?.company_id) {
+                            setCheckEmpResult("ไม่สามารถตรวจสอบได้ - ไม่พบข้อมูลบริษัท");
+                            return;
                           }
-
-                          if (
-                            existingContracts &&
-                            existingContracts.length > 0
-                          ) {
-                            // ตรวจสอบว่าเป็นสัญญาของบริษัทเดียวกันหรือไม่
-                            let hasActiveInSameCompany = false;
-
-                            for (const contract of existingContracts) {
-                              const { data: po } = await supabase
-                                .from("po")
-                                .select("company_id")
-                                .eq("po_id", contract.po_id)
-                                .single();
-
-                              if (po && po.company_id === user?.company_id) {
-                                hasActiveInSameCompany = true;
-                                break;
-                              }
-                            }
-
-                            if (hasActiveInSameCompany) {
-                              setCheckEmpResult("ไม่สามารถใช้ได้");
-                            } else {
-                              setCheckEmpResult("สามารถใช้ได้");
-                            }
-                          } else {
-                            setCheckEmpResult("สามารถใช้ได้");
+                          const response = await fetch("/api/employees", {
+                            method: "POST",
+                            headers: {
+                              "Content-Type": "application/json",
+                            },
+                            body: JSON.stringify({
+                              checkEmployeeCode: true,
+                              employeeId,
+                              companyId: user.company_id,
+                            }),
+                          });
+                          const result = await response.json();
+                          if (!response.ok) {
+                            throw new Error(result?.error || "Unknown error occurred");
+                          }
+                          if (!ignore) {
+                            setCheckEmpResult(result.duplicate ? "ไม่สามารถใช้ได้" : "สามารถใช้ได้");
                           }
                         } catch (error) {
-                          console.error("Error checking employee code:", error);
-                          setCheckEmpResult("เกิดข้อผิดพลาดในการตรวจสอบ");
+                          if (!ignore) {
+                            console.error("Error checking employee code:", error);
+                            setCheckEmpResult("เกิดข้อผิดพลาดในการตรวจสอบ");
+                          }
                         } finally {
-                          setCheckingEmp(false);
+                          if (!ignore) setCheckingEmp(false);
                         }
+                        return () => { ignore = true; };
                       }}
                     >
                       {checkingEmp ? "กำลังตรวจสอบ..." : "ตรวจสอบ"}
@@ -665,7 +559,14 @@ export default function AddEmployeeButton({
                     ))}
                   </Select>
                   {!loadingPo && poList.length === 0 && canProceed && (
-                    <div className="text-orange-600 text-sm mt-1">ไม่พบ PO</div>
+                    <div className="text-red-600 text-sm mt-1">
+                      ไม่พบ PO สำหรับบริษัทนี้ กรุณาติดต่อผู้ดูแลระบบ
+                    </div>
+                  )}
+                  {loadingPo && (
+                    <div className="text-blue-600 text-sm mt-1">
+                      กำลังโหลดรายการ PO...
+                    </div>
                   )}
                 </div>
 

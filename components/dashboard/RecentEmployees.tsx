@@ -39,8 +39,11 @@ export default function RecentEmployees({ employees, type, showCompany }: Recent
 
   return (
     <div className="space-y-3">
-      {employees.map((employee) => (
-        <div key={employee.po_id || employee.employee_id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
+      {employees.map((employee, idx) => (
+        <div
+          key={`${employee.employee_id || ''}-${employee.po_id || ''}-${idx}`}
+          className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
+        >
           <div className="flex-1">
             <div className="font-medium text-sm">
               {employee.po_number ? 

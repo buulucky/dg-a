@@ -49,10 +49,19 @@ function EmployeeTableClient({
   );
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [courseStatuses, setCourseStatuses] = useState<{ course_name: string; status: string; date_completed?: string; expiry_date?: string; }[]>([]);
+  const [courseStatuses, setCourseStatuses] = useState<{ course_id: number; course_name: string; status: string; date_completed?: string; expiry_date?: string; }[]>([]);
   const [loadingCourses, setLoadingCourses] = useState(false);
   const [showCourseModal, setShowCourseModal] = useState(false);
   const [courseModalEmployee, setCourseModalEmployee] = useState<Employee | null>(null);
+  const [completionModal, setCompletionModal] = useState<{
+    isOpen: boolean;
+    course: { course_id: number; course_name: string; } | null;
+    completionDate: string;
+  }>({
+    isOpen: false,
+    course: null,
+    completionDate: new Date().toISOString().split('T')[0] // Today's date as default
+  });
 
   const loadEmployees = async (page: number, searchQuery: string) => {
     const result = await getEmployees(page, 15, searchQuery);
@@ -130,6 +139,63 @@ function EmployeeTableClient({
     e.stopPropagation(); // ป้องกันไม่ให้เปิด employee detail modal
     setCourseModalEmployee(employee);
     setShowCourseModal(true);
+  };
+
+  // Handle opening completion modal
+  const handleOpenCompletionModal = (course: { course_id: number; course_name: string; }) => {
+    setCompletionModal({
+      isOpen: true,
+      course,
+      completionDate: new Date().toISOString().split('T')[0]
+    });
+  };
+
+  // Handle closing completion modal
+  const handleCloseCompletionModal = () => {
+    setCompletionModal({
+      isOpen: false,
+      course: null,
+      completionDate: new Date().toISOString().split('T')[0]
+    });
+  };
+
+  // Handle saving course completion
+  const handleSaveCourseCompletion = async () => {
+    if (!completionModal.course || !courseModalEmployee) return;
+
+    setIsSubmitting(true);
+    
+    try {
+      const response = await fetch('/api/course-completion', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          employee_id: courseModalEmployee.employee_id,
+          course_id: completionModal.course.course_id,
+          date_completed: completionModal.completionDate
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || `HTTP ${response.status}: Failed to save course completion`);
+      }
+
+      toast.success(`บันทึกข้อมูลการอบรมหลักสูตร "${completionModal.course.course_name}" สำเร็จ`);
+      
+      // Refresh course statuses
+      await fetchEmployeeCourseStatuses(courseModalEmployee.employee_id);
+      
+      // Close modal
+      handleCloseCompletionModal();
+    } catch (error) {
+      console.error('Error saving course completion:', error);
+      toast.error('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleCloseCourseModal = () => {
@@ -888,19 +954,36 @@ function EmployeeTableClient({
                               {course.expiry_date ? formatDate(course.expiry_date) : "-"}
                             </td>
                             <td className="px-6 py-4 text-sm border-gray-300">
-                              <span
-                                className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${
-                                  course.status === "ปกติ"
-                                    ? "bg-green-100 text-green-800"
-                                    : course.status === "ใกล้หมดอายุ"
-                                    ? "bg-yellow-100 text-yellow-800"
-                                    : course.status === "หมดอายุแล้ว"
-                                    ? "bg-red-100 text-red-800"
-                                    : "bg-gray-100 text-gray-800"
-                                }`}
-                              >
-                                {course.status}
-                              </span>
+                              {course.status === "ยังไม่อบรม" || course.status === "ใกล้หมดอายุ" || course.status === "หมดอายุแล้ว" ? (
+                                <button
+                                  onClick={isAdmin ? () => handleOpenCompletionModal({ course_id: course.course_id, course_name: course.course_name }) : undefined}
+                                  disabled={!isAdmin}
+                                  className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full transition-all duration-200 ${
+                                    isAdmin
+                                      ? 'hover:shadow-md cursor-pointer'
+                                      : 'opacity-60 cursor-not-allowed'
+                                  } ${
+                                    course.status === "ใกล้หมดอายุ"
+                                      ? "bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
+                                      : course.status === "หมดอายุแล้ว"
+                                      ? "bg-red-100 text-red-800 hover:bg-red-200"
+                                      : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                                  }`}
+                                  title={isAdmin ? "คลิกเพื่อบันทึกวันที่อบรม" : "เฉพาะผู้ดูแลระบบ (admin) เท่านั้นที่สามารถบันทึกวันที่อบรมได้"}
+                                >
+                                  {course.status}
+                                </button>
+                              ) : (
+                                <span
+                                  className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${
+                                    course.status === "ปกติ"
+                                      ? "bg-green-100 text-green-800"
+                                      : "bg-red-100 text-red-800"
+                                  }`}
+                                >
+                                  {course.status}
+                                </span>
+                              )}
                             </td>
                           </tr>
                         ))}
@@ -921,6 +1004,60 @@ function EmployeeTableClient({
                     ปิด
                   </Button>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Course Completion Modal */}
+      {completionModal.isOpen && completionModal.course && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg max-w-md w-full mx-4">
+            <div className="p-6">
+              {/* Header */}
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  บันทึกวันที่อบรม
+                </h3>
+                <p className="text-sm text-gray-600 mt-2">
+                  หลักสูตร: {completionModal.course.course_name}
+                </p>
+                <p className="text-sm text-gray-600">
+                  พนักงาน: {courseModalEmployee?.employee_code} - {courseModalEmployee?.first_name_th} {courseModalEmployee?.last_name_th}
+                </p>
+              </div>
+
+              {/* Form */}
+              <div className="mb-6">
+                <label htmlFor="completionDate" className="block text-sm font-medium text-gray-700 mb-2">
+                  วันที่อบรมเสร็จสิ้น
+                </label>
+                <input
+                  type="date"
+                  id="completionDate"
+                  value={completionModal.completionDate}
+                  onChange={(e) => setCompletionModal(prev => ({ ...prev, completionDate: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  max={new Date().toISOString().split('T')[0]} // Cannot select future dates
+                />
+              </div>
+
+              {/* Footer */}
+              <div className="flex justify-end space-x-3">
+                <Button
+                  variant="outline"
+                  onClick={handleCloseCompletionModal}
+                  disabled={isSubmitting}
+                >
+                  ยกเลิก
+                </Button>
+                <Button
+                  onClick={handleSaveCourseCompletion}
+                  disabled={isSubmitting || !completionModal.completionDate}
+                >
+                  {isSubmitting ? "กำลังบันทึก..." : "บันทึก"}
+                </Button>
               </div>
             </div>
           </div>

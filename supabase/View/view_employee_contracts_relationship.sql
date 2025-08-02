@@ -10,19 +10,32 @@ WITH required_courses AS (
 
 course_taken AS (
   SELECT DISTINCT
+    ecr.employee_id,
+    ecr.course_id,
+    ecr.date_completed,
+    tc.validity_period_days,
+    (ecr.date_completed + (tc.validity_period_days || ' days')::interval) AS expiry_date
+  FROM employee_course_records ecr
+  JOIN training_courses tc ON ecr.course_id = tc.course_id
+),
+
+-- เฉพาะคอร์สที่ยังไม่หมดอายุ
+valid_course_taken AS (
+  SELECT
     employee_id,
     course_id
-  FROM employee_course_records
+  FROM course_taken
+  WHERE expiry_date >= CURRENT_DATE OR expiry_date IS NULL
 ),
 
 course_progress AS (
   SELECT
     rc.employee_id,
     COUNT(DISTINCT rc.course_id) AS total_required,
-    COUNT(DISTINCT ct.course_id) AS completed_courses
+    COUNT(DISTINCT vct.course_id) AS completed_courses
   FROM required_courses rc
-  LEFT JOIN course_taken ct 
-    ON rc.employee_id = ct.employee_id AND rc.course_id = ct.course_id
+  LEFT JOIN valid_course_taken vct
+    ON rc.employee_id = vct.employee_id AND rc.course_id = vct.course_id
   GROUP BY rc.employee_id
 ),
 

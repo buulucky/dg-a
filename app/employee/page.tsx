@@ -15,8 +15,8 @@ export default async function EmployeePage() {
   const totalPages = employeesResult.totalPages;
 
   return (
-    <main className="p-6">
-      <div className="mb-6">
+    <main className="">
+      <div className="">
         <h1 className="text-3xl font-bold">รายชื่อพนักงาน</h1>
         <div className="mt-6">
           <EmployeeTableClient

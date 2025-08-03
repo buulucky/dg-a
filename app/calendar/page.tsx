@@ -29,7 +29,7 @@ export default async function CalendarPage() {
 
   return (
     <Suspense fallback={
-      <div className="container mx-auto p-6">
+      <div className="container mx-auto">
         <div className="grid grid-cols-1 gap-6">
           <Card>
             <CardHeader>

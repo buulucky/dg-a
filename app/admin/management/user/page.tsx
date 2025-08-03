@@ -9,7 +9,7 @@ export default async function AdminPage() {
   const users = await getAllUsers();
 
   return (
-    <main className="p-6">
+    <main className="">
       <AdminPanelClient 
         initialUsers={users} 
         currentUser={currentUser} 

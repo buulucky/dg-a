@@ -21,10 +21,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="bg-purple-100 antialiased">
+      <body>
         {/* <ThemeProvider> */}
         <Navbar />
-        <div className=" m-3 p-6 bg-white border border-purple-200 rounded-2xl shadow-lg">
+        <div>
           {children}
         </div>
         {/* </ThemeProvider> */}

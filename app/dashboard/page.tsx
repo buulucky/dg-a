@@ -26,7 +26,7 @@ export default async function DashboardPage() {
   const isAdmin = userProfile.role === "admin" && userProfile.status === "approved";
 
   return (
-    <div className="p-6">
+    <div className="">
       <div className="mb-6">
         <h1 className="text-3xl font-bold">Dashboard</h1>
         <p className="text-gray-600">สรุปสถิติพนักงานตาม PO</p>

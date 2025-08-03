@@ -15,7 +15,7 @@ export default async function PoManagement() {
   const totalPages = posResult.totalPages;
 
   return (
-    <main className="p-6">
+    <main className="">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">จัดการ Purchase Order (PO)</h1>
         <p className="text-gray-600 mt-2">จัดการข้อมูล Purchase Order และติดตามสถานะ</p>

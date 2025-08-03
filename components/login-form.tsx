@@ -6,15 +6,13 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import Image from "next/image";
 
 export function LoginForm({
   className,
@@ -41,23 +39,23 @@ export function LoginForm({
 
       // ตรวจสอบสถานะการอนุมัติ
       const { data: profile, error: profileError } = await supabase
-        .from('user_profiles')
-        .select('status, role')
-        .eq('id', data.user.id)
+        .from("user_profiles")
+        .select("status, role")
+        .eq("id", data.user.id)
         .single();
 
       if (profileError) {
         throw new Error("ไม่สามารถตรวจสอบสถานะบัญชีได้");
       }
 
-      if (profile.status === 'pending') {
+      if (profile.status === "pending") {
         await supabase.auth.signOut();
         setError("บัญชีของคุณรออนุมัติจากผู้ดูแลระบบ กรุณารอการติดต่อกลับ");
         setIsLoading(false);
         return;
       }
 
-      if (profile.status === 'rejected') {
+      if (profile.status === "rejected") {
         await supabase.auth.signOut();
         setError("บัญชีของคุณถูกปฏิเสธ กรุณาติดต่อผู้ดูแลระบบ");
         setIsLoading(false);
@@ -71,7 +69,9 @@ export function LoginForm({
         if (error.message.includes("Invalid login credentials")) {
           setError("อีเมลหรือรหัสผ่านไม่ถูกต้อง");
         } else if (error.message.includes("Email not confirmed")) {
-          setError("กรุณายืนยันอีเมลของคุณก่อนเข้าสู่ระบบ ตรวจสอบในกล่องข้อความของคุณ");
+          setError(
+            "กรุณายืนยันอีเมลของคุณก่อนเข้าสู่ระบบ ตรวจสอบในกล่องข้อความของคุณ"
+          );
         } else if (error.message.includes("signup")) {
           setError("กรุณายืนยันอีเมลของคุณก่อนเข้าสู่ระบบ");
         } else {
@@ -88,12 +88,22 @@ export function LoginForm({
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
-        <CardHeader>
+        <div className="flex justify-center mt-6 mb-6">
+          <Image
+            src="/Thai_Airways_logo.png"
+            alt="ตราการบินไทย"
+            width={200}
+            height={200}
+            className="h-12 w-auto"
+            priority
+          />
+        </div>
+        {/* <CardHeader>
           <CardTitle className="text-2xl">เข้าสู่ระบบ</CardTitle>
           <CardDescription>
             กรอกอีเมลและรหัสผ่านเพื่อเข้าสู่ระบบ
           </CardDescription>
-        </CardHeader>
+        </CardHeader> */}
         <CardContent>
           <form onSubmit={handleLogin}>
             <div className="flex flex-col gap-6">
@@ -131,8 +141,8 @@ export function LoginForm({
                   {error}
                   {error.includes("ยืนยันอีเมล") && (
                     <div className="mt-2">
-                      <Link 
-                        href="/auth/resend-confirmation" 
+                      <Link
+                        href="/auth/resend-confirmation"
                         className="text-blue-600 hover:text-blue-800 underline"
                       >
                         ส่งอีเมลยืนยันซ้ำ

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useUser } from "@/hooks/useUser";
 import { AuthButton } from "./AuthButton";
 import { useState, useRef, useEffect } from "react";
+import { usePathname } from "next/navigation";
 
 export default function Navbar() {
   const { user } = useUser();
@@ -10,6 +11,9 @@ export default function Navbar() {
   const [showReportDropdown, setShowReportDropdown] = useState(false);
   const manageDropdownRef = useRef<HTMLDivElement>(null);
   const reportDropdownRef = useRef<HTMLDivElement>(null);
+
+  const pathname = usePathname();
+  const isAuthPage = pathname.startsWith("/auth");
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -39,6 +43,10 @@ export default function Navbar() {
     };
   }, [showManageDropdown, showReportDropdown]);
 
+  if (isAuthPage) {
+    return null;
+  }
+
   return (
     <nav className="bg-purple-900 text-white shadow-md">
       <div className="max-w-6xl mx-auto px-4">
@@ -54,10 +62,13 @@ export default function Navbar() {
           </Link>
           {/* Links */}
           <div className="flex gap-6 items-center">
-            <Link href="/dashboard" className="hover:text-purple-200 transition">
+            <Link
+              href="/dashboard"
+              className="hover:text-purple-200 transition"
+            >
               Dashboard
             </Link>
-            
+
             <Link href="/employee" className="hover:text-purple-200 transition">
               Employee
             </Link>

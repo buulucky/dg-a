@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 // import { Geist } from "next/font/google";
 // import { ThemeProvider } from "next-themes";
 import "./globals.css";
-import ConditionalNavbar from "@/components/ConditionalNavbar";
+import Navbar from "@/components/Navbar";
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
@@ -23,7 +23,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className="antialiased">
         {/* <ThemeProvider> */}
-          <ConditionalNavbar />
+          <Navbar />
           {children}
         {/* </ThemeProvider> */}
       </body>

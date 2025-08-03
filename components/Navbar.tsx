@@ -155,7 +155,7 @@ export default function Navbar() {
                 </button>
 
                 {showReportDropdown && (
-                  <div className="absolute top-full right-0 mt-1 bg-white text-gray-800 rounded-lg shadow-lg min-w-[180px] z-50">
+                  <div className="absolute top-full right-0 mt-1 bg-white text-gray-800 rounded-lg shadow-lg min-w-[200px] z-50">
                     <Link
                       href="/admin/reports/employee"
                       className="block px-4 py-2 hover:bg-purple-50 hover:text-purple-700 transition first:rounded-t-lg"
@@ -164,11 +164,18 @@ export default function Navbar() {
                       Report Excel
                     </Link>
                     <Link
-                      href="/admin/reports/po"
-                      className="block px-4 py-2 hover:bg-purple-50 hover:text-purple-700 transition last:rounded-b-lg"
+                      href="/calendar"
+                      className="block px-4 py-2 hover:bg-purple-50 hover:text-purple-700 transition"
                       onClick={() => setShowReportDropdown(false)}
                     >
                       Course Calendar
+                    </Link>
+                    <Link
+                      href="/admin/reports/missing-courses"
+                      className="block px-4 py-2 hover:bg-purple-50 hover:text-purple-700 transition last:rounded-b-lg"
+                      onClick={() => setShowReportDropdown(false)}
+                    >
+                      Missing Courses
                     </Link>
                   </div>
                 )}

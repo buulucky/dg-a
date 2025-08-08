@@ -91,8 +91,8 @@ export async function POST(req: Request) {
     // Load PO list for a company
     if (loadPoList) {
       const { data: pos, error: poError } = await supabase
-        .from("po")
-        .select("po_id, po_number")
+        .from("view_po_relationship")
+        .select("po_id, po_number, job_position_name")
         .eq("company_id", companyId);
 
       if (poError) throw poError;

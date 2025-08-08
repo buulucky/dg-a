@@ -38,7 +38,7 @@ export default function AddEmployeeButton({
   const [checkEmpResult, setCheckEmpResult] = useState<string | null>(null);
   const [canProceed, setCanProceed] = useState(false);
   const [selectedPoId, setSelectedPoId] = useState("");
-  const [poList, setPoList] = useState<{ po_id: string; po_number: string }[]>(
+  const [poList, setPoList] = useState<{ po_id: string; po_number: string; job_position_name?: string }[]>(
     []
   );
   const [loadingPo, setLoadingPo] = useState(false);
@@ -554,7 +554,7 @@ export default function AddEmployeeButton({
                     </option>
                     {poList.map((po) => (
                       <option key={po.po_id} value={po.po_id}>
-                        {po.po_number}
+                        {po.po_number} - {po.job_position_name || "ไม่มีตำแหน่ง"}
                       </option>
                     ))}
                   </Select>

@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { getPOs, updatePO, type PO } from "@/app/admin/management/po/actions";
+import { getPOs, updatePO, type PO } from "@/app/management/po/actions";
 import { toast } from "@/lib/toast";
 import AddPOButton from "./AddPOButton";
 

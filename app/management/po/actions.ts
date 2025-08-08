@@ -130,6 +130,8 @@ export async function updatePO(poId: number, updateData: {
   }
 
   try {
+
+    
     // อัพเดตข้อมูล PO (ไม่รวม po_number)
     const { data, error } = await supabase
       .from("po")

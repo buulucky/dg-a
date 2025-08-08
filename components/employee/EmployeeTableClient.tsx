@@ -43,6 +43,8 @@ function EmployeeTableClient({
   const [totalEmployees, setTotalEmployees] = useState(initialTotal);
   const [totalPages, setTotalPages] = useState(initialTotalPages);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedPO, setSelectedPO] = useState("");
+  const [poList, setPoList] = useState<{ po_id: string; po_number: string; job_position_name?: string; }[]>([]);
   const [isPending, startTransition] = useTransition();
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(
     null
@@ -63,8 +65,8 @@ function EmployeeTableClient({
     completionDate: new Date().toISOString().split('T')[0] // Today's date as default
   });
 
-  const loadEmployees = async (page: number, searchQuery: string) => {
-    const result = await getEmployees(page, 15, searchQuery);
+  const loadEmployees = async (page: number, searchQuery: string, poFilter?: string) => {
+    const result = await getEmployees(page, 15, searchQuery, poFilter);
     if (result.error) {
       toast.error("เกิดข้อผิดพลาดในการโหลดข้อมูลพนักงาน: " + result.error);
     } else {
@@ -74,18 +76,37 @@ function EmployeeTableClient({
     }
   };
 
+  const loadPoList = async () => {
+    try {
+      const supabase = createClient();
+      const { data: pos, error } = await supabase
+        .from("view_po_relationship")
+        .select("po_id, po_number, job_position_name")
+        .order("po_number");
+
+      if (error) {
+        console.error("Error loading PO list:", error);
+        return;
+      }
+
+      setPoList(pos || []);
+    } catch (error) {
+      console.error("Error loading PO list:", error);
+    }
+  };
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     startTransition(() => {
       setCurrentPage(1);
-      loadEmployees(1, searchQuery);
+      loadEmployees(1, searchQuery, selectedPO);
     });
   };
 
   const handlePageChange = (page: number) => {
     startTransition(() => {
       setCurrentPage(page);
-      loadEmployees(page, searchQuery);
+      loadEmployees(page, searchQuery, selectedPO);
     });
   };
 
@@ -123,6 +144,11 @@ function EmployeeTableClient({
       setCourseStatuses([]);
     }
   }, [courseModalEmployee, showCourseModal]);
+
+  // useEffect สำหรับโหลดรายการ PO เมื่อ component mount
+  useEffect(() => {
+    loadPoList();
+  }, []);
 
   const handleEdit = () => {
     if (selectedEmployee) {
@@ -234,7 +260,7 @@ function EmployeeTableClient({
       handleCloseModal();
       // Refresh the data
       startTransition(() => {
-        loadEmployees(currentPage, searchQuery);
+        loadEmployees(currentPage, searchQuery, selectedPO);
       });
       
     } catch (error) {
@@ -258,7 +284,7 @@ function EmployeeTableClient({
               onEmployeeAdded={() => {
                 // รีเฟรชข้อมูลตารางหลังเพิ่มพนักงาน
                 startTransition(() => {
-                  loadEmployees(currentPage, searchQuery);
+                  loadEmployees(currentPage, searchQuery, selectedPO);
                 });
               }}
             />
@@ -266,7 +292,7 @@ function EmployeeTableClient({
         )}
 
         {/* Search Form */}
-        <form onSubmit={handleSearch} className="mb-6 flex gap-4">
+        <form onSubmit={handleSearch} className="mb-6 flex gap-4 flex-wrap">
           <Input
             type="text"
             placeholder="ค้นหาพนักงาน"
@@ -274,6 +300,18 @@ function EmployeeTableClient({
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-56"
           />
+          <select
+            value={selectedPO}
+            onChange={(e) => setSelectedPO(e.target.value)}
+            className="w-64 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="">-- เลือก PO --</option>
+            {poList.map((po) => (
+              <option key={po.po_id} value={po.po_id}>
+                {po.po_number} - {po.job_position_name || "ไม่มีตำแหน่ง"}
+              </option>
+            ))}
+          </select>
           <Button type="submit" disabled={isPending}>
             {isPending ? "กำลังค้นหา..." : "ค้นหา"}
           </Button>
@@ -282,9 +320,10 @@ function EmployeeTableClient({
             variant="outline"
             onClick={() => {
               setSearchQuery("");
+              setSelectedPO("");
               setCurrentPage(1);
               startTransition(() => {
-                loadEmployees(1, "");
+                loadEmployees(1, "", "");
               });
             }}
             disabled={isPending}
@@ -297,6 +336,7 @@ function EmployeeTableClient({
         <div className="mb-4 text-sm text-gray-600">
           แสดง {employees.length} รายการ จากทั้งหมด {totalEmployees} รายการ
           {searchQuery && ` (ค้นหา: "${searchQuery}")`}
+          {selectedPO && ` (PO: ${poList.find(po => po.po_id === selectedPO)?.po_number || selectedPO})`}
         </div>
 
         {/* Employee Table */}
@@ -598,7 +638,7 @@ function EmployeeTableClient({
                         setSelectedEmployee(null);
                         // รีเฟรชข้อมูลตารางหลังเปลี่ยนสถานะ
                         startTransition(() => {
-                          loadEmployees(currentPage, searchQuery);
+                          loadEmployees(currentPage, searchQuery, selectedPO);
                         });
                       }}
                     />

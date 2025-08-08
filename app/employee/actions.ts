@@ -30,7 +30,8 @@ export interface Employee {
 export async function getEmployees(
   page: number = 1,
   limit: number = 15,
-  search: string = ""
+  search: string = "",
+  poFilter: string = ""
 ): Promise<{ 
   data: Employee[] | null; 
   error: string | null; 
@@ -74,6 +75,12 @@ export async function getEmployees(
     if (userProfile.role !== 'admin') {
       countQuery = countQuery.eq('company_id', userProfile.company_id);
       dataQuery = dataQuery.eq('company_id', userProfile.company_id);
+    }
+
+    // เพิ่มการค้นหาตาม PO
+    if (poFilter.trim()) {
+      countQuery = countQuery.eq('po_id', poFilter);
+      dataQuery = dataQuery.eq('po_id', poFilter);
     }
 
     // เพิ่มการค้นหา

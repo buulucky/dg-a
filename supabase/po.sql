@@ -30,24 +30,16 @@ USING (
   )
 );
 
--- เพิ่มได้เฉพาะ admin
-CREATE POLICY "Allow insert for admin only"
+CREATE POLICY "Allow insert"
 ON po
 FOR INSERT
 WITH CHECK (
-  EXISTS (
-    SELECT 1 FROM user_profiles
-    WHERE id = auth.uid() AND role = 'admin'
-  )
+  auth.uid() IS NOT NULL
 );
 
--- แก้ไขได้เฉพาะ admin
-CREATE POLICY "Allow update for admin only"
+CREATE POLICY "Allow update"
 ON po
 FOR UPDATE
 USING (
-  EXISTS (
-    SELECT 1 FROM user_profiles
-    WHERE id = auth.uid() AND role = 'admin'
-  )
+  auth.uid() IS NOT NULL
 );

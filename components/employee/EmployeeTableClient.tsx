@@ -3,7 +3,11 @@
 import { useState, useTransition, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { getEmployees, updateEmployee, type Employee } from "../../app/employee/actions";
+import {
+  getEmployees,
+  updateEmployee,
+  type Employee,
+} from "../../app/employee/actions";
 import ChangeStatusButton from "@/components/employee/ChangeStatusButton";
 import AddEmployeeButton from "@/components/employee/AddEmployeeButton";
 import { toast } from "@/lib/toast";
@@ -44,29 +48,49 @@ function EmployeeTableClient({
   const [totalPages, setTotalPages] = useState(initialTotalPages);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPO, setSelectedPO] = useState("");
-  const [poList, setPoList] = useState<{ po_id: string; po_number: string; job_position_name?: string; }[]>([]);
+  const [poList, setPoList] = useState<
+    { po_id: string; po_number: string; job_position_name?: string }[]
+  >([]);
+  const [selectedCompany, setSelectedCompany] = useState("");
+  const [companyList, setCompanyList] = useState<
+    { company_id: string; company_name: string }[]
+  >([]);
   const [isPending, startTransition] = useTransition();
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(
     null
   );
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [courseStatuses, setCourseStatuses] = useState<{ course_id: number; course_name: string; status: string; date_completed?: string; expiry_date?: string; }[]>([]);
+  const [courseStatuses, setCourseStatuses] = useState<
+    {
+      course_id: number;
+      course_name: string;
+      status: string;
+      date_completed?: string;
+      expiry_date?: string;
+    }[]
+  >([]);
   const [loadingCourses, setLoadingCourses] = useState(false);
   const [showCourseModal, setShowCourseModal] = useState(false);
-  const [courseModalEmployee, setCourseModalEmployee] = useState<Employee | null>(null);
+  const [courseModalEmployee, setCourseModalEmployee] =
+    useState<Employee | null>(null);
   const [completionModal, setCompletionModal] = useState<{
     isOpen: boolean;
-    course: { course_id: number; course_name: string; } | null;
+    course: { course_id: number; course_name: string } | null;
     completionDate: string;
   }>({
     isOpen: false,
     course: null,
-    completionDate: new Date().toISOString().split('T')[0] // Today's date as default
+    completionDate: new Date().toISOString().split("T")[0], // Today's date as default
   });
 
-  const loadEmployees = async (page: number, searchQuery: string, poFilter?: string) => {
-    const result = await getEmployees(page, 15, searchQuery, poFilter);
+  const loadEmployees = async (
+    page: number,
+    searchQuery: string,
+    poFilter?: string,
+    companyFilter?: string
+  ) => {
+    const result = await getEmployees(page, 15, searchQuery, poFilter, companyFilter);
     if (result.error) {
       toast.error("เกิดข้อผิดพลาดในการโหลดข้อมูลพนักงาน: " + result.error);
     } else {
@@ -95,18 +119,37 @@ function EmployeeTableClient({
     }
   };
 
+  const loadCompanyList = async () => {
+    try {
+      const supabase = createClient();
+      const { data: companies, error } = await supabase
+        .from("companies")
+        .select("company_id, company_name")
+        .order("company_name");
+
+      if (error) {
+        console.error("Error loading company list:", error);
+        return;
+      }
+
+      setCompanyList(companies || []);
+    } catch (error) {
+      console.error("Error loading company list:", error);
+    }
+  };
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     startTransition(() => {
       setCurrentPage(1);
-      loadEmployees(1, searchQuery, selectedPO);
+      loadEmployees(1, searchQuery, selectedPO, selectedCompany);
     });
   };
 
   const handlePageChange = (page: number) => {
     startTransition(() => {
       setCurrentPage(page);
-      loadEmployees(page, searchQuery, selectedPO);
+      loadEmployees(page, searchQuery, selectedPO, selectedCompany);
     });
   };
 
@@ -118,7 +161,7 @@ function EmployeeTableClient({
   const fetchEmployeeCourseStatuses = async (employeeId: string) => {
     setLoadingCourses(true);
     const supabase = createClient();
-    
+
     const { data, error } = await supabase
       .from("view_employee_course_statuses")
       .select("*")
@@ -145,10 +188,13 @@ function EmployeeTableClient({
     }
   }, [courseModalEmployee, showCourseModal]);
 
-  // useEffect สำหรับโหลดรายการ PO เมื่อ component mount
+  // useEffect สำหรับโหลดรายการ PO และบริษัท เมื่อ component mount
   useEffect(() => {
     loadPoList();
-  }, []);
+    if (isAdmin) {
+      loadCompanyList();
+    }
+  }, [isAdmin]);
 
   const handleEdit = () => {
     if (selectedEmployee) {
@@ -168,11 +214,14 @@ function EmployeeTableClient({
   };
 
   // Handle opening completion modal
-  const handleOpenCompletionModal = (course: { course_id: number; course_name: string; }) => {
+  const handleOpenCompletionModal = (course: {
+    course_id: number;
+    course_name: string;
+  }) => {
     setCompletionModal({
       isOpen: true,
       course,
-      completionDate: new Date().toISOString().split('T')[0]
+      completionDate: new Date().toISOString().split("T")[0],
     });
   };
 
@@ -181,7 +230,7 @@ function EmployeeTableClient({
     setCompletionModal({
       isOpen: false,
       course: null,
-      completionDate: new Date().toISOString().split('T')[0]
+      completionDate: new Date().toISOString().split("T")[0],
     });
   };
 
@@ -190,35 +239,42 @@ function EmployeeTableClient({
     if (!completionModal.course || !courseModalEmployee) return;
 
     setIsSubmitting(true);
-    
+
     try {
-      const response = await fetch('/api/course-completion', {
-        method: 'POST',
+      const response = await fetch("/api/course-completion", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           employee_id: courseModalEmployee.employee_id,
           course_id: completionModal.course.course_id,
-          date_completed: completionModal.completionDate
+          date_completed: completionModal.completionDate,
         }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        throw new Error(errorData.error || `HTTP ${response.status}: Failed to save course completion`);
+        const errorData = await response
+          .json()
+          .catch(() => ({ error: "Unknown error" }));
+        throw new Error(
+          errorData.error ||
+            `HTTP ${response.status}: Failed to save course completion`
+        );
       }
 
-      toast.success(`บันทึกข้อมูลการอบรมหลักสูตร "${completionModal.course.course_name}" สำเร็จ`);
-      
+      toast.success(
+        `บันทึกข้อมูลการอบรมหลักสูตร "${completionModal.course.course_name}" สำเร็จ`
+      );
+
       // Refresh course statuses
       await fetchEmployeeCourseStatuses(courseModalEmployee.employee_id);
-      
+
       // Close modal
       handleCloseCompletionModal();
     } catch (error) {
-      console.error('Error saving course completion:', error);
-      toast.error('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+      console.error("Error saving course completion:", error);
+      toast.error("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
     } finally {
       setIsSubmitting(false);
     }
@@ -235,34 +291,33 @@ function EmployeeTableClient({
     if (!selectedEmployee) return;
 
     setIsSubmitting(true);
-    
+
     try {
       const formData = new FormData(e.currentTarget);
-      
+
       // เรียกใช้ action สำหรับอัปเดตข้อมูลพนักงาน
       const result = await updateEmployee({
         employeeId: selectedEmployee.employee_id,
-        prefix_th: formData.get('prefix_th') as string,
-        first_name_th: formData.get('first_name_th') as string,
-        last_name_th: formData.get('last_name_th') as string,
-        prefix_en: formData.get('prefix_en') as string,
-        first_name_en: formData.get('first_name_en') as string,
-        last_name_en: formData.get('last_name_en') as string,
-        birth_date: formData.get('birth_date') as string,
+        prefix_th: formData.get("prefix_th") as string,
+        first_name_th: formData.get("first_name_th") as string,
+        last_name_th: formData.get("last_name_th") as string,
+        prefix_en: formData.get("prefix_en") as string,
+        first_name_en: formData.get("first_name_en") as string,
+        last_name_en: formData.get("last_name_en") as string,
+        birth_date: formData.get("birth_date") as string,
       });
-      
+
       if (result.error) {
         toast.error("เกิดข้อผิดพลาดในการแก้ไขข้อมูล: " + result.error);
         return;
       }
-      
+
       toast.success("แก้ไขข้อมูลพนักงานสำเร็จ");
       handleCloseModal();
       // Refresh the data
       startTransition(() => {
-        loadEmployees(currentPage, searchQuery, selectedPO);
+        loadEmployees(currentPage, searchQuery, selectedPO, selectedCompany);
       });
-      
     } catch (error) {
       console.error("Error updating employee:", error);
       toast.error("เกิดข้อผิดพลาดในการแก้ไขข้อมูลพนักงาน");
@@ -275,16 +330,16 @@ function EmployeeTableClient({
     <>
       {/* เพิ่ม CSS animation */}
       <style jsx>{modalStyles}</style>
-      
+
       <div className="w-full">
         {/* Add Employee Button */}
         {showAddButton && (
           <div className="mb-6">
-            <AddEmployeeButton 
+            <AddEmployeeButton
               onEmployeeAdded={() => {
                 // รีเฟรชข้อมูลตารางหลังเพิ่มพนักงาน
                 startTransition(() => {
-                  loadEmployees(currentPage, searchQuery, selectedPO);
+                  loadEmployees(currentPage, searchQuery, selectedPO, selectedCompany);
                 });
               }}
             />
@@ -312,6 +367,20 @@ function EmployeeTableClient({
               </option>
             ))}
           </select>
+          {isAdmin && (
+            <select
+              value={selectedCompany}
+              onChange={(e) => setSelectedCompany(e.target.value)}
+              className="w-64 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="">-- เลือกบริษัท --</option>
+              {companyList.map((company) => (
+                <option key={company.company_id} value={company.company_id}>
+                  {company.company_name}
+                </option>
+              ))}
+            </select>
+          )}
           <Button type="submit" disabled={isPending}>
             {isPending ? "กำลังค้นหา..." : "ค้นหา"}
           </Button>
@@ -321,9 +390,10 @@ function EmployeeTableClient({
             onClick={() => {
               setSearchQuery("");
               setSelectedPO("");
+              setSelectedCompany("");
               setCurrentPage(1);
               startTransition(() => {
-                loadEmployees(1, "", "");
+                loadEmployees(1, "", "", "");
               });
             }}
             disabled={isPending}
@@ -336,7 +406,16 @@ function EmployeeTableClient({
         <div className="mb-4 text-sm text-gray-600">
           แสดง {employees.length} รายการ จากทั้งหมด {totalEmployees} รายการ
           {searchQuery && ` (ค้นหา: "${searchQuery}")`}
-          {selectedPO && ` (PO: ${poList.find(po => po.po_id === selectedPO)?.po_number || selectedPO})`}
+          {selectedPO &&
+            ` (PO: ${
+              poList.find((po) => po.po_id === selectedPO)?.po_number ||
+              selectedPO
+            })`}
+          {isAdmin && selectedCompany &&
+            ` (บริษัท: ${
+              companyList.find((company) => company.company_id === selectedCompany)
+                ?.company_name || selectedCompany
+            })`}
         </div>
 
         {/* Employee Table */}
@@ -353,6 +432,11 @@ function EmployeeTableClient({
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   ชื่อ-นามสกุล
                 </th>
+                {isAdmin && (
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    บริษัท
+                  </th>
+                )}
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   เลข PO
                 </th>
@@ -371,7 +455,7 @@ function EmployeeTableClient({
               {employees.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={8}
                     className="px-6 py-8 text-center text-gray-500"
                   >
                     {isPending ? "กำลังโหลดข้อมูล..." : "ไม่พบข้อมูลพนักงาน"}
@@ -394,6 +478,11 @@ function EmployeeTableClient({
                       {employee.prefix_th} {employee.first_name_th}{" "}
                       {employee.last_name_th}
                     </td>
+                    {isAdmin && (
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
+                        {employee.company_name || "-"}
+                      </td>
+                    )}
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
                       {employee.po_number || "-"}
                     </td>
@@ -403,7 +492,7 @@ function EmployeeTableClient({
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
                       {formatDate(employee.start_date)}
                     </td>
-                    <td 
+                    <td
                       className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 border-b cursor-pointer hover:text-blue-800 hover:underline"
                       onClick={(e) => handleShowCourseModal(employee, e)}
                     >
@@ -474,10 +563,10 @@ function EmployeeTableClient({
       {/* Employee Detail Modal */}
       {selectedEmployee && !isEditModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div 
+          <div
             className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto transform transition-all duration-300 ease-out scale-100"
             style={{
-              animation: 'modalFadeIn 0.3s ease-out'
+              animation: "modalFadeIn 0.3s ease-out",
             }}
           >
             <div className="p-8">
@@ -490,8 +579,18 @@ function EmployeeTableClient({
                   onClick={handleCloseModal}
                   className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors duration-200"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
                   </svg>
                 </button>
               </div>
@@ -627,7 +726,7 @@ function EmployeeTableClient({
                   </p>
                 </div>
               </div>
-              
+
               {/* Footer */}
               <div className="pt-6 border-t border-gray-100">
                 <div className="flex justify-between items-center">
@@ -638,7 +737,7 @@ function EmployeeTableClient({
                         setSelectedEmployee(null);
                         // รีเฟรชข้อมูลตารางหลังเปลี่ยนสถานะ
                         startTransition(() => {
-                          loadEmployees(currentPage, searchQuery, selectedPO);
+                          loadEmployees(currentPage, searchQuery, selectedPO, selectedCompany);
                         });
                       }}
                     />
@@ -651,17 +750,10 @@ function EmployeeTableClient({
                     >
                       ปิด
                     </Button>
-                    {!isAdmin && (
-                      <Button
-                        onClick={handleEdit}
-                      >
-                        แก้ไข
-                      </Button>
-                    )}
+                    {!isAdmin && <Button onClick={handleEdit}>แก้ไข</Button>}
                   </div>
                 </div>
               </div>
-
             </div>
           </div>
         </div>
@@ -670,10 +762,10 @@ function EmployeeTableClient({
       {/* Edit Employee Modal */}
       {selectedEmployee && isEditModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div 
+          <div
             className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto transform transition-all duration-300 ease-out scale-100"
             style={{
-              animation: 'modalFadeIn 0.3s ease-out'
+              animation: "modalFadeIn 0.3s ease-out",
             }}
           >
             <div className="p-8">
@@ -686,8 +778,18 @@ function EmployeeTableClient({
                   onClick={handleCloseModal}
                   className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors duration-200"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
                   </svg>
                 </button>
               </div>
@@ -818,7 +920,13 @@ function EmployeeTableClient({
                     <Input
                       type="date"
                       name="birth_date"
-                      defaultValue={selectedEmployee.birth_date ? new Date(selectedEmployee.birth_date).toISOString().split('T')[0] : ""}
+                      defaultValue={
+                        selectedEmployee.birth_date
+                          ? new Date(selectedEmployee.birth_date)
+                              .toISOString()
+                              .split("T")[0]
+                          : ""
+                      }
                       className="w-full"
                     />
                   </div>
@@ -884,7 +992,7 @@ function EmployeeTableClient({
                     />
                   </div>
                 </div>
-                
+
                 {/* Footer */}
                 <div className="flex justify-end space-x-3 pt-6 border-t border-gray-100">
                   <Button
@@ -903,7 +1011,7 @@ function EmployeeTableClient({
                   >
                     กลับไปดูรายละเอียด
                   </Button>
-                  <Button 
+                  <Button
                     type="submit"
                     className="bg-green-600 hover:bg-green-700"
                     disabled={isSubmitting}
@@ -920,10 +1028,10 @@ function EmployeeTableClient({
       {/* Course Status Modal */}
       {courseModalEmployee && showCourseModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div 
+          <div
             className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto transform transition-all duration-300 ease-out scale-100"
             style={{
-              animation: 'modalFadeIn 0.3s ease-out'
+              animation: "modalFadeIn 0.3s ease-out",
             }}
           >
             <div className="p-8">
@@ -934,15 +1042,27 @@ function EmployeeTableClient({
                     สถานะการอบรมหลักสูตร
                   </h2>
                   <p className="text-sm text-gray-600 mt-1">
-                    {courseModalEmployee.prefix_th} {courseModalEmployee.first_name_th} {courseModalEmployee.last_name_th}
+                    {courseModalEmployee.prefix_th}{" "}
+                    {courseModalEmployee.first_name_th}{" "}
+                    {courseModalEmployee.last_name_th}
                   </p>
                 </div>
                 <button
                   onClick={handleCloseCourseModal}
                   className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors duration-200"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
                   </svg>
                 </button>
               </div>
@@ -952,15 +1072,31 @@ function EmployeeTableClient({
                 {loadingCourses ? (
                   <div className="flex justify-center items-center py-12">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-                    <span className="ml-3 text-gray-600">กำลังโหลดข้อมูลหลักสูตร...</span>
+                    <span className="ml-3 text-gray-600">
+                      กำลังโหลดข้อมูลหลักสูตร...
+                    </span>
                   </div>
                 ) : courseStatuses.length === 0 ? (
                   <div className="text-center py-12 text-gray-500">
-                    <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    <svg
+                      className="mx-auto h-12 w-12 text-gray-400 mb-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                      />
                     </svg>
-                    <p className="text-lg font-medium">ไม่มีข้อมูลหลักสูตรที่ต้องอบรม</p>
-                    <p className="text-sm">พนักงานคนนี้ไม่มีหลักสูตรที่ต้องอบรมตามตำแหน่งงาน</p>
+                    <p className="text-lg font-medium">
+                      ไม่มีข้อมูลหลักสูตรที่ต้องอบรม
+                    </p>
+                    <p className="text-sm">
+                      พนักงานคนนี้ไม่มีหลักสูตรที่ต้องอบรมตามตำแหน่งงาน
+                    </p>
                   </div>
                 ) : (
                   <div className="overflow-y-auto max-h-[400px]">
@@ -988,20 +1124,34 @@ function EmployeeTableClient({
                               {course.course_name}
                             </td>
                             <td className="px-6 py-4 text-sm text-gray-900 border-r border-gray-300">
-                              {course.date_completed ? formatDate(course.date_completed) : "-"}
+                              {course.date_completed
+                                ? formatDate(course.date_completed)
+                                : "-"}
                             </td>
                             <td className="px-6 py-4 text-sm text-gray-900 border-r border-gray-300">
-                              {course.expiry_date ? formatDate(course.expiry_date) : "-"}
+                              {course.expiry_date
+                                ? formatDate(course.expiry_date)
+                                : "-"}
                             </td>
                             <td className="px-6 py-4 text-sm border-gray-300">
-                              {course.status === "ยังไม่อบรม" || course.status === "ใกล้หมดอายุ" || course.status === "หมดอายุแล้ว" ? (
+                              {course.status === "ยังไม่อบรม" ||
+                              course.status === "ใกล้หมดอายุ" ||
+                              course.status === "หมดอายุแล้ว" ? (
                                 <button
-                                  onClick={isAdmin ? () => handleOpenCompletionModal({ course_id: course.course_id, course_name: course.course_name }) : undefined}
+                                  onClick={
+                                    isAdmin
+                                      ? () =>
+                                          handleOpenCompletionModal({
+                                            course_id: course.course_id,
+                                            course_name: course.course_name,
+                                          })
+                                      : undefined
+                                  }
                                   disabled={!isAdmin}
                                   className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full transition-all duration-200 ${
                                     isAdmin
-                                      ? 'hover:shadow-md cursor-pointer'
-                                      : 'opacity-60 cursor-not-allowed'
+                                      ? "hover:shadow-md cursor-pointer"
+                                      : "opacity-60 cursor-not-allowed"
                                   } ${
                                     course.status === "ใกล้หมดอายุ"
                                       ? "bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
@@ -1009,7 +1159,11 @@ function EmployeeTableClient({
                                       ? "bg-red-100 text-red-800 hover:bg-red-200"
                                       : "bg-gray-100 text-gray-800 hover:bg-gray-200"
                                   }`}
-                                  title={isAdmin ? "คลิกเพื่อบันทึกวันที่อบรม" : "เฉพาะผู้ดูแลระบบ (admin) เท่านั้นที่สามารถบันทึกวันที่อบรมได้"}
+                                  title={
+                                    isAdmin
+                                      ? "คลิกเพื่อบันทึกวันที่อบรม"
+                                      : "เฉพาะผู้ดูแลระบบ (admin) เท่านั้นที่สามารถบันทึกวันที่อบรมได้"
+                                  }
                                 >
                                   {course.status}
                                 </button>
@@ -1032,7 +1186,7 @@ function EmployeeTableClient({
                   </div>
                 )}
               </div>
-              
+
               {/* Footer */}
               <div className="pt-6 border-t border-gray-100">
                 <div className="flex justify-end">
@@ -1064,22 +1218,32 @@ function EmployeeTableClient({
                   หลักสูตร: {completionModal.course.course_name}
                 </p>
                 <p className="text-sm text-gray-600">
-                  พนักงาน: {courseModalEmployee?.employee_code} - {courseModalEmployee?.first_name_th} {courseModalEmployee?.last_name_th}
+                  พนักงาน: {courseModalEmployee?.employee_code} -{" "}
+                  {courseModalEmployee?.first_name_th}{" "}
+                  {courseModalEmployee?.last_name_th}
                 </p>
               </div>
 
               {/* Form */}
               <div className="mb-6">
-                <label htmlFor="completionDate" className="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor="completionDate"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
                   วันที่อบรมเสร็จสิ้น
                 </label>
                 <input
                   type="date"
                   id="completionDate"
                   value={completionModal.completionDate}
-                  onChange={(e) => setCompletionModal(prev => ({ ...prev, completionDate: e.target.value }))}
+                  onChange={(e) =>
+                    setCompletionModal((prev) => ({
+                      ...prev,
+                      completionDate: e.target.value,
+                    }))
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  max={new Date().toISOString().split('T')[0]} // Cannot select future dates
+                  max={new Date().toISOString().split("T")[0]} // Cannot select future dates
                 />
               </div>
 

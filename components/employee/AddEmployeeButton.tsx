@@ -118,7 +118,14 @@ export default function AddEmployeeButton({
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result?.error || "Unknown error occurred");
+        if (result.blacklist) {
+          setCheckResult(result.error);
+          setCanProceed(false);
+        } else {
+          setCheckResult(result.error || "เกิดข้อผิดพลาดในการตรวจสอบ");
+          setCanProceed(false);
+        }
+        return;
       }
 
       if (!result.employeeData) {
@@ -413,9 +420,9 @@ export default function AddEmployeeButton({
                       className="border rounded py-1 text-sm w-20"
                     >
                       <option value="">-- เลือก --</option>
-                      <option value="Mr.">Mr.</option>
-                      <option value="Mrs.">Mrs.</option>
-                      <option value="Miss">Miss</option>
+                      <option value="MR">MR</option>
+                      <option value="MRS">MRS</option>
+                      <option value="MISS">MISS</option>
                     </Select>
                   </div>
                   <div className="flex-1">

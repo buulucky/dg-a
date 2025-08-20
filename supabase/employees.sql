@@ -10,6 +10,7 @@ CREATE TABLE employees (
   last_name_en VARCHAR(50),
   birth_date DATE NOT NULL,
 
+  blacklist BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP DEFAULT now(),
   updated_at TIMESTAMP DEFAULT now()
 );

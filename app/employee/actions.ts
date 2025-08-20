@@ -31,7 +31,8 @@ export async function getEmployees(
   page: number = 1,
   limit: number = 15,
   search: string = "",
-  poFilter: string = ""
+  poFilter: string = "",
+  companyFilter: string = ""
 ): Promise<{ 
   data: Employee[] | null; 
   error: string | null; 
@@ -81,6 +82,12 @@ export async function getEmployees(
     if (poFilter.trim()) {
       countQuery = countQuery.eq('po_id', poFilter);
       dataQuery = dataQuery.eq('po_id', poFilter);
+    }
+
+    // เพิ่มการค้นหาตามบริษัท (สำหรับ admin เท่านั้น)
+    if (companyFilter.trim() && userProfile.role === 'admin') {
+      countQuery = countQuery.eq('company_id', companyFilter);
+      dataQuery = dataQuery.eq('company_id', companyFilter);
     }
 
     // เพิ่มการค้นหา

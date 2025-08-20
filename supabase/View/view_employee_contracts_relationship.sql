@@ -44,7 +44,7 @@ course_status_summary AS (
     cp.employee_id,
     CASE 
       WHEN cp.total_required = cp.completed_courses THEN 'All completed'
-      ELSE CONCAT(cp.total_required, '/', cp.completed_courses)
+      ELSE CONCAT(cp.completed_courses, '/', cp.total_required)
     END AS course_progress_summary
   FROM course_progress cp
 )

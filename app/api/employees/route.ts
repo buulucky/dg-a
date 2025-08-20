@@ -3,6 +3,15 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function POST(req: Request) {
   try {
+    const supabase = await createClient();
+    
+    // ตรวจสอบ user ที่ล็อกอิน
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await req.json();
     const {
       personalId,
@@ -14,8 +23,6 @@ export async function POST(req: Request) {
       loadPoList,
       companyId,
     } = body;
-
-    const supabase = await createClient();
 
     // Check for duplicate employee_code
     if (checkEmployeeCode) {
@@ -48,7 +55,8 @@ export async function POST(req: Request) {
     if (checkPersonalId) {
       const { data: employeeData, error: employeeError } = await supabase
         .from("employees")
-        .select(`
+        .select(
+          `
           personal_id, 
           employee_id,
           prefix_th,
@@ -57,13 +65,22 @@ export async function POST(req: Request) {
           prefix_en,
           first_name_en,
           last_name_en,
-          birth_date
-        `)
+          birth_date,
+          blacklist
+        `
+        )
         .eq("personal_id", personalId)
         .single();
 
       if (employeeError && employeeError.code !== "PGRST116") {
         throw employeeError;
+      }
+
+      if (employeeData?.blacklist === true) {
+        return NextResponse.json(
+          { error: "บุคคลนี้อยู่ใน Blacklist", blacklist: true },
+          { status: 403 }
+        );
       }
 
       let hasActiveContract = false;
@@ -82,9 +99,9 @@ export async function POST(req: Request) {
         hasActiveContract = !!activeContract;
       }
 
-      return NextResponse.json({ 
+      return NextResponse.json({
         employeeData: employeeData || null,
-        hasActiveContract 
+        hasActiveContract,
       });
     }
 
@@ -154,13 +171,15 @@ export async function POST(req: Request) {
     }
 
     // Insert contract
-    const { error: contractError } = await supabase.from("employee_contracts").insert({
-      employee_id: employeeIdToUse,
-      employee_code: employeeId,
-      po_id: selectedPoId,
-      status_id: 1, // Active status
-      start_date: formData.start_date,
-    });
+    const { error: contractError } = await supabase
+      .from("employee_contracts")
+      .insert({
+        employee_id: employeeIdToUse,
+        employee_code: employeeId,
+        po_id: selectedPoId,
+        status_id: 1, // Active status
+        start_date: formData.start_date,
+      });
 
     if (contractError) throw contractError;
 
@@ -173,6 +192,9 @@ export async function POST(req: Request) {
       errorMessage = error.message;
     }
 
-    return NextResponse.json({ success: false, error: errorMessage }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: errorMessage },
+      { status: 500 }
+    );
   }
 }

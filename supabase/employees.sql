@@ -15,3 +15,10 @@ CREATE TABLE employees (
   updated_at TIMESTAMP DEFAULT now()
 );
 
+create policy "admin can update"
+on employees
+for update
+using (EXISTS (
+  select 1 from user_profiles
+  where id = auth.uid() and role = 'admin'
+));

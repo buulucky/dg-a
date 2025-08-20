@@ -519,7 +519,7 @@ function EmployeeTableClient({
                 employees.map((employee, index) => (
                   <tr
                     key={`${employee.employee_id}-${index}`}
-                    className="hover:bg-purple-100 cursor-pointer"
+                    className={`hover:bg-purple-100 cursor-pointer ${employee.blacklist ? 'bg-red-100' : ''}`}
                     onClick={() => setSelectedEmployee(employee)}
                   >
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
@@ -547,15 +547,12 @@ function EmployeeTableClient({
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
                       {formatDate(employee.start_date)}
                     </td>
-
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 border-b cursor-pointer hover:text-blue-800 hover:underline">
                       บันทึก
                     </td>
-
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 border-b cursor-pointer hover:text-blue-800 hover:underline">
                       บันทึก
                     </td>
-
                     <td
                       className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 border-b cursor-pointer hover:text-blue-800 hover:underline"
                       onClick={(e) => handleShowCourseModal(employee, e)}
@@ -639,6 +636,11 @@ function EmployeeTableClient({
                 <h2 className="text-xl font-semibold text-gray-800">
                   ข้อมูลพนักงาน
                 </h2>
+                {selectedEmployee?.blacklist && (
+                  <div className="absolute top-2 left-0 w-full text-center text-3xl text-red-600 font-bold ">
+                    BLACKLIST!
+                  </div>
+                )}
                 <button
                   onClick={handleCloseModal}
                   className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors duration-200"
@@ -818,7 +820,7 @@ function EmployeeTableClient({
                       onClick={handleBlacklist}
                       disabled={isSubmitting || selectedEmployee?.blacklist}
                     >
-                      {isSubmitting ? "กำลังดำเนินการ..." : selectedEmployee?.blacklist ? "Blacklisted แล้ว" : "Blacklist"}
+                      {isSubmitting ? "กำลังดำเนินการ..." : selectedEmployee?.blacklist ? "Blacklisted" : "Blacklist"}
                     </Button>
                   )}
                   <div className="flex justify-end space-x-3 ml-auto">

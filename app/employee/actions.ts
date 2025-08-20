@@ -25,6 +25,7 @@ export interface Employee {
   company_name: string | null;
   status_code?: string | null;
   course_progress_summary?: string | null;
+  blacklist?: boolean;
 }
 
 export async function getEmployees(
@@ -207,5 +208,46 @@ export async function updateEmployee({
   } catch (error) {
     console.error("Server action error:", error);
     return { error: "เกิดข้อผิดพลาดในการอัปเดตข้อมูล" };
+  }
+}
+
+export async function blacklistEmployee(employeeId: string): Promise<{ error: string | null }> {
+  try {
+    const supabase = await createClient();
+    
+    // ตรวจสอบ user ที่ล็อกอิน
+    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !authUser) {
+      return { error: "ไม่พบผู้ใช้ที่ล็อกอิน" };
+    }
+
+    // ตรวจสอบว่าเป็น admin หรือไม่
+    const { data: userProfile, error: profileError } = await supabase
+      .from("user_profiles")
+      .select("role")
+      .eq("id", authUser.id)
+      .single();
+
+    if (profileError || !userProfile || userProfile.role !== 'admin') {
+      return { error: "คุณไม่มีสิทธิ์ในการดำเนินการนี้" };
+    }
+
+    // อัปเดต blacklist field เป็น true
+    const { error: updateError } = await supabase
+      .from("employees")
+      .update({ blacklist: true })
+      .eq("employee_id", employeeId);
+
+    if (updateError) {
+      console.error("Error blacklisting employee:", updateError);
+      return { error: updateError.message || "เกิดข้อผิดพลาดในการ blacklist พนักงาน" };
+    }
+
+    return { error: null };
+    
+  } catch (error) {
+    console.error("Server action error:", error);
+    return { error: "เกิดข้อผิดพลาดในการ blacklist พนักงาน" };
   }
 }

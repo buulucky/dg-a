@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import {
   getEmployees,
   updateEmployee,
+  blacklistEmployee,
   type Employee,
 } from "../../app/employee/actions";
 import ChangeStatusButton from "@/components/employee/ChangeStatusButton";
@@ -332,6 +333,38 @@ function EmployeeTableClient({
     }
   };
 
+  const handleBlacklist = async () => {
+    if (!selectedEmployee || selectedEmployee.blacklist) return;
+
+    // แสดง confirmation dialog
+    if (!confirm(`คุณต้องการ blacklist พนักงาน "${selectedEmployee.prefix_th} ${selectedEmployee.first_name_th} ${selectedEmployee.last_name_th}" หรือไม่?`)) {
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const result = await blacklistEmployee(selectedEmployee.employee_id);
+
+      if (result.error) {
+        toast.error("เกิดข้อผิดพลาดในการ blacklist พนักงาน: " + result.error);
+        return;
+      }
+
+      toast.success("Blacklist พนักงานสำเร็จ");
+      handleCloseModal();
+      // Refresh the data
+      startTransition(() => {
+        loadEmployees(currentPage, searchQuery, selectedPO, selectedCompany);
+      });
+    } catch (error) {
+      console.error("Error blacklisting employee:", error);
+      toast.error("เกิดข้อผิดพลาดในการ blacklist พนักงาน");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <>
       {/* เพิ่ม CSS animation */}
@@ -452,13 +485,6 @@ function EmployeeTableClient({
                 )}
 
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  ตรวจสุขภาพ
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  ตรวจปัจจัยเสี่ยง
-                </th>
-
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   เลข PO
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -466,6 +492,13 @@ function EmployeeTableClient({
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   วันที่เริ่มงาน
+                </th>
+
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  ตรวจสุขภาพ
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  ตรวจปัจจัยเสี่ยง
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   สถานะอบรม
@@ -506,14 +539,6 @@ function EmployeeTableClient({
                     )}
 
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
-                      23-03-2589
-                    </td>
-
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
-                      23-03-2589
-                    </td>
-
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
                       {employee.po_number || "-"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
@@ -522,6 +547,15 @@ function EmployeeTableClient({
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
                       {formatDate(employee.start_date)}
                     </td>
+
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 border-b cursor-pointer hover:text-blue-800 hover:underline">
+                      บันทึก
+                    </td>
+
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 border-b cursor-pointer hover:text-blue-800 hover:underline">
+                      บันทึก
+                    </td>
+
                     <td
                       className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 border-b cursor-pointer hover:text-blue-800 hover:underline"
                       onClick={(e) => handleShowCourseModal(employee, e)}
@@ -779,8 +813,12 @@ function EmployeeTableClient({
                   )}
 
                   {isAdmin && (
-                    <Button variant="destructive" disabled={isSubmitting}>
-                      {isSubmitting ? "กำลังดำเนินการ..." : "Blacklist"}
+                    <Button 
+                      variant="destructive" 
+                      onClick={handleBlacklist}
+                      disabled={isSubmitting || selectedEmployee?.blacklist}
+                    >
+                      {isSubmitting ? "กำลังดำเนินการ..." : selectedEmployee?.blacklist ? "Blacklisted แล้ว" : "Blacklist"}
                     </Button>
                   )}
                   <div className="flex justify-end space-x-3 ml-auto">

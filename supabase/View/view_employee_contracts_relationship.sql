@@ -73,7 +73,8 @@ SELECT
   po.po_number,
   jp.job_position_name,
   est.status_code,
-  COALESCE(css.course_progress_summary, '0/0') AS course_progress_summary
+  COALESCE(css.course_progress_summary, '0/0') AS course_progress_summary,
+  e.blacklist
 FROM employee_contracts ec
 LEFT JOIN po ON ec.po_id = po.po_id
 LEFT JOIN companies c ON po.company_id = c.company_id

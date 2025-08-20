@@ -90,7 +90,13 @@ function EmployeeTableClient({
     poFilter?: string,
     companyFilter?: string
   ) => {
-    const result = await getEmployees(page, 15, searchQuery, poFilter, companyFilter);
+    const result = await getEmployees(
+      page,
+      15,
+      searchQuery,
+      poFilter,
+      companyFilter
+    );
     if (result.error) {
       toast.error("เกิดข้อผิดพลาดในการโหลดข้อมูลพนักงาน: " + result.error);
     } else {
@@ -339,7 +345,12 @@ function EmployeeTableClient({
               onEmployeeAdded={() => {
                 // รีเฟรชข้อมูลตารางหลังเพิ่มพนักงาน
                 startTransition(() => {
-                  loadEmployees(currentPage, searchQuery, selectedPO, selectedCompany);
+                  loadEmployees(
+                    currentPage,
+                    searchQuery,
+                    selectedPO,
+                    selectedCompany
+                  );
                 });
               }}
             />
@@ -411,10 +422,12 @@ function EmployeeTableClient({
               poList.find((po) => po.po_id === selectedPO)?.po_number ||
               selectedPO
             })`}
-          {isAdmin && selectedCompany &&
+          {isAdmin &&
+            selectedCompany &&
             ` (บริษัท: ${
-              companyList.find((company) => company.company_id === selectedCompany)
-                ?.company_name || selectedCompany
+              companyList.find(
+                (company) => company.company_id === selectedCompany
+              )?.company_name || selectedCompany
             })`}
         </div>
 
@@ -437,6 +450,14 @@ function EmployeeTableClient({
                     บริษัท
                   </th>
                 )}
+
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  ตรวจสุขภาพ
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  ตรวจปัจจัยเสี่ยง
+                </th>
+
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   เลข PO
                 </th>
@@ -455,7 +476,7 @@ function EmployeeTableClient({
               {employees.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={8}
+                    colSpan={10}
                     className="px-6 py-8 text-center text-gray-500"
                   >
                     {isPending ? "กำลังโหลดข้อมูล..." : "ไม่พบข้อมูลพนักงาน"}
@@ -483,6 +504,15 @@ function EmployeeTableClient({
                         {employee.company_name || "-"}
                       </td>
                     )}
+
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
+                      23-03-2589
+                    </td>
+
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
+                      23-03-2589
+                    </td>
+
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
                       {employee.po_number || "-"}
                     </td>
@@ -737,10 +767,21 @@ function EmployeeTableClient({
                         setSelectedEmployee(null);
                         // รีเฟรชข้อมูลตารางหลังเปลี่ยนสถานะ
                         startTransition(() => {
-                          loadEmployees(currentPage, searchQuery, selectedPO, selectedCompany);
+                          loadEmployees(
+                            currentPage,
+                            searchQuery,
+                            selectedPO,
+                            selectedCompany
+                          );
                         });
                       }}
                     />
+                  )}
+
+                  {isAdmin && (
+                    <Button variant="destructive" disabled={isSubmitting}>
+                      {isSubmitting ? "กำลังดำเนินการ..." : "Blacklist"}
+                    </Button>
                   )}
                   <div className="flex justify-end space-x-3 ml-auto">
                     <Button
@@ -877,10 +918,10 @@ function EmployeeTableClient({
                       className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 p-2 border"
                     >
                       <option value="">เลือกคำนำหน้า</option>
-                      <option value="Mr.">Mr.</option>
-                      <option value="Mrs.">Mrs.</option>
-                      <option value="Miss">Miss</option>
-                      <option value="Ms.">Ms.</option>
+                      <option value="MR">MR</option>
+                      <option value="MRS">MRS</option>
+                      <option value="MISS">MISS</option>
+                      <option value="MS">MS</option>
                     </select>
                   </div>
 

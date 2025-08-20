@@ -637,13 +637,13 @@ function EmployeeTableClient({
                   ข้อมูลพนักงาน
                 </h2>
                 {selectedEmployee?.blacklist && (
-                  <div className="absolute top-2 left-0 w-full text-center text-3xl text-red-600 font-bold ">
+                  <div className="absolute top-7 left-0 w-full text-center text-3xl text-red-600 font-bold">
                     BLACKLIST!
                   </div>
                 )}
                 <button
                   onClick={handleCloseModal}
-                  className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors duration-200"
+                  className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors duration-200 z-[100]"
                 >
                   <svg
                     className="w-5 h-5"

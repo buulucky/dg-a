@@ -58,8 +58,6 @@ export async function getPOList(companyId?: number): Promise<POOption[]> {
         await supabase.rpc('set_claim', { key: 'company_id', value: userProfile.company_id.toString() });
       }
     }
-
-    console.log("Fetching PO list for company:", companyId);
     
     let query = supabase
       .from('view_po_relationship')
@@ -78,7 +76,6 @@ export async function getPOList(companyId?: number): Promise<POOption[]> {
       return [];
     }
 
-    console.log("PO list data:", data);
     return data || [];
   } catch (error) {
     console.error("Error fetching PO list:", error);
@@ -105,8 +102,6 @@ export async function getPOEmployeeStats(poId: number): Promise<POEmployeeStats 
         await supabase.rpc('set_claim', { key: 'company_id', value: userProfile.company_id.toString() });
       }
     }
-
-    console.log("getPOEmployeeStats: Starting for PO ID", poId);
     
     // ดึงข้อมูล PO
     const { data: poData, error: poError } = await supabase
@@ -114,9 +109,6 @@ export async function getPOEmployeeStats(poId: number): Promise<POEmployeeStats 
       .select('po_id, po_number, company_name, function_code, job_position_name, employee_count, start_date, end_date')
       .eq('po_id', poId)
       .single();
-
-    console.log("getPOEmployeeStats: PO data", poData);
-    console.log("getPOEmployeeStats: PO error", poError);
 
     if (poError || !poData) {
       console.error("Error fetching PO info:", poError);
@@ -129,8 +121,6 @@ export async function getPOEmployeeStats(poId: number): Promise<POEmployeeStats 
     const now = new Date();
     const twelveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 11, 1).toISOString().slice(0, 10);
     const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString().slice(0, 10);
-
-    console.log("getPOEmployeeStats: Checking for month", currentMonth, "to", currentMonthEnd);
 
     // Query ข้อมูลหลักแบบ parallel
     const [
@@ -181,10 +171,6 @@ export async function getPOEmployeeStats(poId: number): Promise<POEmployeeStats 
         .gte('end_date', twelveMonthsAgo)
         .lt('end_date', nextMonth)
     ]);
-
-    console.log("getPOEmployeeStats: Current employees count", currentEmployees);
-    console.log("getPOEmployeeStats: Employees in this month", employeesInThisMonth);
-    console.log("getPOEmployeeStats: Employees out this month", employeesOutThisMonth);
 
     // คำนวณขาดเหลือ
     const targetEmployees = poData.employee_count;

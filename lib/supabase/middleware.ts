@@ -49,7 +49,7 @@ export async function updateSession(request: NextRequest) {
 
   const isAuthPage = request.nextUrl.pathname.startsWith("/auth");
   const isEmployeePage = request.nextUrl.pathname.startsWith("/employee");
-  const isAdminPage = request.nextUrl.pathname.startsWith("/admin");
+  const isAdminPage = request.nextUrl.pathname.startsWith("/admin/management") || request.nextUrl.pathname.startsWith("/management/");
   const isDashboardPage = request.nextUrl.pathname.startsWith("/dashboard");
   const isHomePage = request.nextUrl.pathname === "/" || request.nextUrl.pathname === "/home";
 

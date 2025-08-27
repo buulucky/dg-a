@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { getPOs, updatePO, type PO } from "@/app/management/po/actions";
+import { getPOs, updatePO, type PO } from "@/app/admin/management/po/actions";
 import { toast } from "@/lib/toast";
 import AddPOButton from "./AddPOButton";
 
@@ -33,6 +33,8 @@ function POTableClient({
   initialPOs,
   initialTotal,
   initialTotalPages,
+  showAddButton = false,
+  isAdmin = false,
 }: POTableClientProps) {
   const [pos, setPOs] = useState<PO[]>(initialPOs);
   const [currentPage, setCurrentPage] = useState(1);
@@ -81,23 +83,11 @@ function POTableClient({
     const end = new Date(endDate);
 
     if (now < start) {
-      return (
-        <span className="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800">
-          รอเริ่มงาน
-        </span>
-      );
+      return <span className="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800">รอเริ่มงาน</span>;
     } else if (now >= start && now <= end) {
-      return (
-        <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
-          ใช้งานอยู่
-        </span>
-      );
+      return <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">ใช้งานอยู่</span>;
     } else {
-      return (
-        <span className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800">
-          หมดอายุ
-        </span>
-      );
+      return <span className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800">หมดอายุ</span>;
     }
   };
 
@@ -123,19 +113,19 @@ function POTableClient({
     if (!selectedPO) return;
 
     setIsSubmitting(true);
-
+    
     try {
       const formData = new FormData(e.currentTarget);
-
+      
       const updateData = {
-        employee_count: parseInt(formData.get("employee_count") as string),
-        po_type: formData.get("po_type") as string,
-        start_date: formData.get("start_date") as string,
-        end_date: formData.get("end_date") as string,
+        employee_count: parseInt(formData.get('employee_count') as string),
+        po_type: formData.get('po_type') as string,
+        start_date: formData.get('start_date') as string,
+        end_date: formData.get('end_date') as string,
       };
-
+      
       const result = await updatePO(selectedPO.po_id, updateData);
-
+      
       if (result.success) {
         toast.success("แก้ไขข้อมูล PO สำเร็จ");
         handleCloseModal();
@@ -146,6 +136,7 @@ function POTableClient({
       } else {
         toast.error(result.error || "เกิดข้อผิดพลาดในการแก้ไขข้อมูล PO");
       }
+      
     } catch (error) {
       console.error("Error updating PO:", error);
       toast.error("เกิดข้อผิดพลาดในการแก้ไขข้อมูล PO");
@@ -158,12 +149,14 @@ function POTableClient({
     <>
       {/* เพิ่ม CSS animation */}
       <style jsx>{modalStyles}</style>
-
+      
       <div className="w-full">
         {/* Add PO Button */}
-        <div className="mb-6">
-          <AddPOButton onPOAdded={handleRefresh} />
-        </div>
+        {showAddButton && (
+          <div className="mb-6">
+            <AddPOButton onPOAdded={handleRefresh} />
+          </div>
+        )}
 
         {/* Search Form */}
         <form onSubmit={handleSearch} className="mb-6 flex gap-4">
@@ -263,9 +256,7 @@ function POTableClient({
                       {formatDate(po.end_date)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
-                      {po.start_date && po.end_date
-                        ? getStatusBadge(po.start_date, po.end_date)
-                        : "-"}
+                      {po.start_date && po.end_date ? getStatusBadge(po.start_date, po.end_date) : "-"}
                     </td>
                   </tr>
                 ))
@@ -289,13 +280,12 @@ function POTableClient({
               >
                 ก่อนหน้า
               </Button>
-
+              
               {/* Page Numbers */}
               {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                const page =
-                  Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
+                const page = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
                 if (page > totalPages) return null;
-
+                
                 return (
                   <Button
                     key={page}
@@ -308,7 +298,7 @@ function POTableClient({
                   </Button>
                 );
               })}
-
+              
               <Button
                 variant="outline"
                 size="sm"
@@ -324,10 +314,10 @@ function POTableClient({
         {/* PO Detail Modal */}
         {selectedPO && !isEditModalOpen && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div
+            <div 
               className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto transform transition-all duration-300 ease-out scale-100"
               style={{
-                animation: "modalFadeIn 0.3s ease-out",
+                animation: 'modalFadeIn 0.3s ease-out'
               }}
             >
               <div className="p-8">
@@ -340,102 +330,52 @@ function POTableClient({
                     onClick={handleCloseModal}
                     className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors duration-200"
                   >
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M6 18L18 6M6 6l12 12"
-                      />
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
-                </div>{" "}
-                <div className="space-y-4">
+                </div>                <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-1">
-                      <label className="block text-sm font-medium text-gray-700">
-                        เลข PO
-                      </label>
-                      <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">
-                        {selectedPO.po_number || "-"}
-                      </p>
+                      <label className="block text-sm font-medium text-gray-700">เลข PO</label>
+                      <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">{selectedPO.po_number || "-"}</p>
                     </div>
                     <div className="space-y-1">
-                      <label className="block text-sm font-medium text-gray-700">
-                        บริษัท
-                      </label>
-                      <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">
-                        {selectedPO.company_name}
-                      </p>
+                      <label className="block text-sm font-medium text-gray-700">บริษัท</label>
+                      <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">{selectedPO.company_name}</p>
                     </div>
                     <div className="space-y-1">
-                      <label className="block text-sm font-medium text-gray-700">
-                        กลุ่มงาน
-                      </label>
-                      <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">
-                        {selectedPO.function_code}
-                      </p>
+                      <label className="block text-sm font-medium text-gray-700">กลุ่มงาน</label>
+                      <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">{selectedPO.function_code}</p>
                     </div>
                     <div className="space-y-1">
-                      <label className="block text-sm font-medium text-gray-700">
-                        ตำแหน่งงาน
-                      </label>
-                      <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">
-                        {selectedPO.job_position_name}
-                      </p>
+                      <label className="block text-sm font-medium text-gray-700">ตำแหน่งงาน</label>
+                      <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">{selectedPO.job_position_name}</p>
                     </div>
                     <div className="space-y-1">
-                      <label className="block text-sm font-medium text-gray-700">
-                        จำนวนพนักงาน
-                      </label>
-                      <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">
-                        {selectedPO.employee_count || 0} คน
-                      </p>
+                      <label className="block text-sm font-medium text-gray-700">จำนวนพนักงาน</label>
+                      <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">{selectedPO.employee_count || 0} คน</p>
                     </div>
                     <div className="space-y-1">
-                      <label className="block text-sm font-medium text-gray-700">
-                        สัญญา
-                      </label>
-                      <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">
-                        {selectedPO.po_type || "-"}
-                      </p>
+                      <label className="block text-sm font-medium text-gray-700">สัญญา</label>
+                      <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">{selectedPO.po_type || "-"}</p>
                     </div>
                     <div className="space-y-1">
-                      <label className="block text-sm font-medium text-gray-700">
-                        วันที่เริ่มงาน
-                      </label>
-                      <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">
-                        {formatDate(selectedPO.start_date)}
-                      </p>
+                      <label className="block text-sm font-medium text-gray-700">วันที่เริ่มงาน</label>
+                      <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">{formatDate(selectedPO.start_date)}</p>
                     </div>
                     <div className="space-y-1">
-                      <label className="block text-sm font-medium text-gray-700">
-                        วันที่สิ้นสุด
-                      </label>
-                      <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">
-                        {formatDate(selectedPO.end_date)}
-                      </p>
+                      <label className="block text-sm font-medium text-gray-700">วันที่สิ้นสุด</label>
+                      <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">{formatDate(selectedPO.end_date)}</p>
                     </div>
                     <div className="space-y-1">
-                      <label className="block text-sm font-medium text-gray-700">
-                        สถานะ
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700">สถานะ</label>
                       <div className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">
-                        {selectedPO.start_date && selectedPO.end_date
-                          ? getStatusBadge(
-                              selectedPO.start_date,
-                              selectedPO.end_date
-                            )
-                          : "-"}
+                        {selectedPO.start_date && selectedPO.end_date ? getStatusBadge(selectedPO.start_date, selectedPO.end_date) : "-"}
                       </div>
                     </div>
                   </div>
-
+                  
                   {/* Footer */}
                   <div className="pt-6 border-t border-gray-100">
                     <div className="flex justify-end space-x-3">
@@ -446,7 +386,13 @@ function POTableClient({
                       >
                         ปิด
                       </Button>
-                      <Button onClick={handleEdit}>แก้ไข</Button>
+                      {isAdmin && (
+                        <Button 
+                          onClick={handleEdit}
+                        >
+                          แก้ไข
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -458,10 +404,10 @@ function POTableClient({
         {/* Edit PO Modal */}
         {selectedPO && isEditModalOpen && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div
+            <div 
               className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto transform transition-all duration-300 ease-out scale-100"
               style={{
-                animation: "modalFadeIn 0.3s ease-out",
+                animation: 'modalFadeIn 0.3s ease-out'
               }}
             >
               <div className="p-8">
@@ -474,28 +420,16 @@ function POTableClient({
                     onClick={handleCloseModal}
                     className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors duration-200"
                   >
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M6 18L18 6M6 6l12 12"
-                      />
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
                 </div>
-
+                
                 <form className="space-y-6" onSubmit={handleSaveEdit}>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-1">
-                      <label className="block text-sm font-medium text-gray-700">
-                        เลข PO
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700">เลข PO</label>
                       <Input
                         type="text"
                         defaultValue={selectedPO.po_number || ""}
@@ -505,9 +439,7 @@ function POTableClient({
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="block text-sm font-medium text-gray-700">
-                        บริษัท
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700">บริษัท</label>
                       <Input
                         type="text"
                         defaultValue={selectedPO.company_name}
@@ -517,9 +449,7 @@ function POTableClient({
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="block text-sm font-medium text-gray-700">
-                        กลุ่มงาน
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700">กลุ่มงาน</label>
                       <Input
                         type="text"
                         defaultValue={selectedPO.function_code}
@@ -529,9 +459,7 @@ function POTableClient({
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="block text-sm font-medium text-gray-700">
-                        ตำแหน่งงาน
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700">ตำแหน่งงาน</label>
                       <Input
                         type="text"
                         defaultValue={selectedPO.job_position_name}
@@ -541,9 +469,7 @@ function POTableClient({
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="block text-sm font-medium text-gray-700">
-                        จำนวนพนักงาน
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700">จำนวนพนักงาน</label>
                       <Input
                         type="number"
                         name="employee_count"
@@ -554,10 +480,8 @@ function POTableClient({
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="block text-sm font-medium text-gray-700">
-                        ประเภทสัญญา
-                      </label>
-                      <select
+                      <label className="block text-sm font-medium text-gray-700">ประเภทสัญญา</label>
+                      <select 
                         name="po_type"
                         className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 p-2 border"
                         defaultValue={selectedPO.po_type || ""}
@@ -568,41 +492,25 @@ function POTableClient({
                       </select>
                     </div>
                     <div className="space-y-1">
-                      <label className="block text-sm font-medium text-gray-700">
-                        วันที่เริ่มงาน
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700">วันที่เริ่มงาน</label>
                       <Input
                         type="date"
                         name="start_date"
-                        defaultValue={
-                          selectedPO.start_date
-                            ? new Date(selectedPO.start_date)
-                                .toISOString()
-                                .split("T")[0]
-                            : ""
-                        }
+                        defaultValue={selectedPO.start_date ? new Date(selectedPO.start_date).toISOString().split('T')[0] : ""}
                         className="w-full"
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="block text-sm font-medium text-gray-700">
-                        วันที่สิ้นสุด
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700">วันที่สิ้นสุด</label>
                       <Input
                         type="date"
                         name="end_date"
-                        defaultValue={
-                          selectedPO.end_date
-                            ? new Date(selectedPO.end_date)
-                                .toISOString()
-                                .split("T")[0]
-                            : ""
-                        }
+                        defaultValue={selectedPO.end_date ? new Date(selectedPO.end_date).toISOString().split('T')[0] : ""}
                         className="w-full"
                       />
                     </div>
                   </div>
-
+                  
                   {/* Footer */}
                   <div className="flex justify-end space-x-3 pt-6 border-t border-gray-100">
                     <Button
@@ -621,7 +529,7 @@ function POTableClient({
                     >
                       กลับไปดูรายละเอียด
                     </Button>
-                    <Button
+                    <Button 
                       type="submit"
                       className="bg-green-600 hover:bg-green-700"
                       disabled={isSubmitting}

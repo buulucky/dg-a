@@ -109,15 +109,22 @@ export default function Navbar() {
                     >
                       Purchase Order
                     </Link>
-                    {/* <Link
-                    href="#"
-                    className="block px-4 py-2 hover:bg-purple-50 hover:text-purple-700 transition last:rounded-b-lg"
-                    onClick={() => setShowManageDropdown(false)}
-                  >
-                    XXXXXX
-                  </Link> */}
                     <Link
-                      href="/admin/management/course"
+                      href="/admin/management/positions"
+                      className="block px-4 py-2 hover:bg-purple-50 hover:text-purple-700 transition last:rounded-b-lg"
+                      onClick={() => setShowManageDropdown(false)}
+                    >
+                      Positions
+                    </Link>
+                    <Link
+                      href="/admin/management/training_courses"
+                      className="block px-4 py-2 hover:bg-purple-50 hover:text-purple-700 transition last:rounded-b-lg"
+                      onClick={() => setShowManageDropdown(false)}
+                    >
+                      Training Courses
+                    </Link>
+                    <Link
+                      href="/admin/management/course_position"
                       className="block px-4 py-2 hover:bg-purple-50 hover:text-purple-700 transition last:rounded-b-lg"
                       onClick={() => setShowManageDropdown(false)}
                     >

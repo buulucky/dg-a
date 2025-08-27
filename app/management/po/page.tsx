@@ -17,8 +17,8 @@ export default async function PoManagement() {
   return (
     <main className="">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">จัดการ Purchase Order (PO)</h1>
-        <p className="text-gray-600 mt-2">จัดการข้อมูล Purchase Order และติดตามสถานะ</p>
+        <h1 className="text-2xl font-bold text-gray-900">Purchase Order (PO)</h1>
+        <p className="text-gray-600 mt-2">จัดการข้อมูล Purchase Order</p>
       </div>
       <div className="mt-6">
         <POTableClient 

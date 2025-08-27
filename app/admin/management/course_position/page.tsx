@@ -1,18 +1,14 @@
 "use client";
-import { useState, useEffect } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { useState, useEffect, useTransition } from "react";
 import { toast } from "@/lib/toast";
 import AddCourseButton from "@/components/management/course/AddCourseButton";
-
-interface PositionCourse {
-  position_name: string;
-  required_courses: string;
-}
+import { getPositionCourses, PositionCourse } from "./actions";
 
 export default function CourseManagementPage() {
   const [positionCourses, setPositionCourses] = useState<PositionCourse[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [, startTransition] = useTransition();
 
   useEffect(() => {
     fetchPositionCourses();
@@ -20,21 +16,19 @@ export default function CourseManagementPage() {
 
   const fetchPositionCourses = async () => {
     setLoading(true);
-    const supabase = createClient();
+    
+    startTransition(async () => {
+      const { data, error } = await getPositionCourses();
 
-    const { data, error } = await supabase
-      .from("view_position_required_courses")
-      .select("*")
-      .order("position_name");
+      setLoading(false);
 
-    setLoading(false);
-
-    if (error) {
-      console.error("Error fetching position courses:", error);
-      toast.error("เกิดข้อผิดพลาดในการโหลดข้อมูล: " + error.message);
-    } else {
-      setPositionCourses(data || []);
-    }
+      if (error) {
+        console.error("Error fetching position courses:", error);
+        toast.error("เกิดข้อผิดพลาดในการโหลดข้อมูล: " + error);
+      } else {
+        setPositionCourses(data || []);
+      }
+    });
   };
 
   const filteredCourses = positionCourses.filter(
@@ -46,7 +40,7 @@ export default function CourseManagementPage() {
   return (
     <main className="">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">จัดการหลักสูตร</h1>
+        <h1 className="text-2xl font-bold text-gray-900">หลักสูตร & ตำแหน่งงาน</h1>
         <p className="text-gray-600 mt-2">จัดการข้อมูลหลักสูตรตามตำแหน่งงาน</p>
       </div>
       <div className="mb-6">

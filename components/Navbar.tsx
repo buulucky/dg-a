@@ -164,7 +164,7 @@ export default function Navbar() {
                 <div className="absolute top-full right-0 mt-1 bg-white text-gray-800 rounded-lg shadow-lg min-w-[200px] z-50">
                   {/* {user?.role === "admin" && user?.status === "approved" && ( */}
                   <Link
-                    href="/admin/reports/employee"
+                    href="/reports/employee"
                     className="block px-4 py-2 hover:bg-purple-50 hover:text-purple-700 transition first:rounded-t-lg"
                     onClick={() => setShowReportDropdown(false)}
                   >
@@ -172,14 +172,14 @@ export default function Navbar() {
                   </Link>
                   {/* )} */}
                   <Link
-                    href="/calendar"
+                    href="/reports/calendar"
                     className="block px-4 py-2 hover:bg-purple-50 hover:text-purple-700 transition"
                     onClick={() => setShowReportDropdown(false)}
                   >
                     Course Calendar
                   </Link>
                   <Link
-                    href="/admin/reports/missing-courses"
+                    href="/reports/missing-courses"
                     className="block px-4 py-2 hover:bg-purple-50 hover:text-purple-700 transition last:rounded-b-lg"
                     onClick={() => setShowReportDropdown(false)}
                   >

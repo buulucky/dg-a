@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
-import CourseExpiryCalendar from "@/components/calendar/CourseExpiryCalendar";
+import CourseExpiryCalendar from "@/components/management/calendar/CourseExpiryCalendar";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 export default async function CalendarPage() {

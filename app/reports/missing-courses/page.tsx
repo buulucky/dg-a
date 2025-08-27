@@ -142,8 +142,8 @@ export default function MissingCoursesPage() {
     params.set('company_name', selectedPOData!.company_name);
     params.set('course_name', course.course_name);
     params.set('employee_count', course.employee_count.toString());
-    
-    router.push(`/admin/reports/missing-courses/details?${params.toString()}`);
+
+    router.push(`/reports/missing-courses/details?${params.toString()}`);
   };
 
   if (loading) {

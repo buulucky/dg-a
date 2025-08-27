@@ -6,7 +6,7 @@ import { format, parse, startOfWeek, getDay } from "date-fns";
 import { th } from "date-fns/locale";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getCourseList, getCourseExpiryData, type CourseOption, type CourseExpiryData } from "@/app/calendar/actions";
+import { getCourseList, getCourseExpiryData, type CourseOption, type CourseExpiryData } from "@/app/reports/calendar/actions";
 
 const locales = {
   'th': th,

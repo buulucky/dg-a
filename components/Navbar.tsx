@@ -9,6 +9,7 @@ export default function Navbar() {
   const { user } = useUser();
   const [showManageDropdown, setShowManageDropdown] = useState(false);
   const [showReportDropdown, setShowReportDropdown] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const manageDropdownRef = useRef<HTMLDivElement>(null);
   const reportDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -60,8 +61,9 @@ export default function Navbar() {
               DG-A
             </span>
           </Link>
-          {/* Links */}
-          <div className="flex gap-6 items-center">
+
+          {/* Desktop Links */}
+          <div className="hidden md:flex gap-6 items-center">
             <Link
               href="/dashboard"
               className="hover:text-purple-200 transition"
@@ -111,14 +113,14 @@ export default function Navbar() {
                     </Link>
                     <Link
                       href="/admin/management/positions"
-                      className="block px-4 py-2 hover:bg-purple-50 hover:text-purple-700 transition last:rounded-b-lg"
+                      className="block px-4 py-2 hover:bg-purple-50 hover:text-purple-700 transition"
                       onClick={() => setShowManageDropdown(false)}
                     >
                       Positions
                     </Link>
                     <Link
                       href="/admin/management/training_courses"
-                      className="block px-4 py-2 hover:bg-purple-50 hover:text-purple-700 transition last:rounded-b-lg"
+                      className="block px-4 py-2 hover:bg-purple-50 hover:text-purple-700 transition"
                       onClick={() => setShowManageDropdown(false)}
                     >
                       Training Courses
@@ -134,6 +136,7 @@ export default function Navbar() {
                 )}
               </div>
             )}
+            
             <div className="relative" ref={reportDropdownRef}>
               <button
                 className="hover:text-purple-200 transition flex items-center gap-1"
@@ -162,7 +165,6 @@ export default function Navbar() {
 
               {showReportDropdown && (
                 <div className="absolute top-full right-0 mt-1 bg-white text-gray-800 rounded-lg shadow-lg min-w-[200px] z-50">
-                  {/* {user?.role === "admin" && user?.status === "approved" && ( */}
                   <Link
                     href="/reports/employee"
                     className="block px-4 py-2 hover:bg-purple-50 hover:text-purple-700 transition first:rounded-t-lg"
@@ -170,7 +172,6 @@ export default function Navbar() {
                   >
                     Report Excel
                   </Link>
-                  {/* )} */}
                   <Link
                     href="/reports/calendar"
                     className="block px-4 py-2 hover:bg-purple-50 hover:text-purple-700 transition"
@@ -189,10 +190,137 @@ export default function Navbar() {
               )}
             </div>
           </div>
-          <div>
+
+          {/* Desktop Auth Button */}
+          <div className="hidden md:block">
             <AuthButton />
           </div>
+
+          {/* Mobile Menu Button */}
+          <div className="md:hidden">
+            <button
+              onClick={() => setShowMobileMenu(!showMobileMenu)}
+              className="p-2 rounded-md hover:bg-purple-800 transition"
+            >
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                {showMobileMenu ? (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                ) : (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
+                )}
+              </svg>
+            </button>
+          </div>
         </div>
+
+        {/* Mobile Menu */}
+        {showMobileMenu && (
+          <div className="md:hidden bg-purple-800 border-t border-purple-700 py-4">
+            <div className="flex flex-col space-y-4">
+              <Link
+                href="/dashboard"
+                className="px-4 py-2 hover:bg-purple-700 transition rounded"
+                onClick={() => setShowMobileMenu(false)}
+              >
+                Dashboard
+              </Link>
+
+              <Link
+                href="/employee"
+                className="px-4 py-2 hover:bg-purple-700 transition rounded"
+                onClick={() => setShowMobileMenu(false)}
+              >
+                Employee
+              </Link>
+
+              {user?.role === "admin" && user?.status === "approved" && (
+                <div className="px-4">
+                  <div className="border-t border-purple-700 pt-4">
+                    <p className="text-purple-200 text-sm font-medium mb-2">Management</p>
+                    <div className="pl-4 space-y-2">
+                      <Link
+                        href="/admin/management/po"
+                        className="block py-2 hover:text-purple-200 transition"
+                        onClick={() => setShowMobileMenu(false)}
+                      >
+                        Purchase Order
+                      </Link>
+                      <Link
+                        href="/admin/management/positions"
+                        className="block py-2 hover:text-purple-200 transition"
+                        onClick={() => setShowMobileMenu(false)}
+                      >
+                        Positions
+                      </Link>
+                      <Link
+                        href="/admin/management/training_courses"
+                        className="block py-2 hover:text-purple-200 transition"
+                        onClick={() => setShowMobileMenu(false)}
+                      >
+                        Training Courses
+                      </Link>
+                      <Link
+                        href="/admin/management/course_position"
+                        className="block py-2 hover:text-purple-200 transition"
+                        onClick={() => setShowMobileMenu(false)}
+                      >
+                        Position & Course
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="px-4">
+                <div className="border-t border-purple-700 pt-4">
+                  <p className="text-purple-200 text-sm font-medium mb-2">Report</p>
+                  <div className="pl-4 space-y-2">
+                    <Link
+                      href="/reports/employee"
+                      className="block py-2 hover:text-purple-200 transition"
+                      onClick={() => setShowMobileMenu(false)}
+                    >
+                      Report Excel
+                    </Link>
+                    <Link
+                      href="/reports/calendar"
+                      className="block py-2 hover:text-purple-200 transition"
+                      onClick={() => setShowMobileMenu(false)}
+                    >
+                      Course Calendar
+                    </Link>
+                    <Link
+                      href="/reports/missing-courses"
+                      className="block py-2 hover:text-purple-200 transition"
+                      onClick={() => setShowMobileMenu(false)}
+                    >
+                      Missing Courses
+                    </Link>
+                  </div>
+                </div>
+              </div>
+
+              <div className="px-4 pt-4 border-t border-purple-700">
+                <AuthButton />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </nav>
   );

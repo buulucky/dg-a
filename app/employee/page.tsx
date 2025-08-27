@@ -17,8 +17,8 @@ export default async function EmployeePage() {
   return (
     <main className="">
       <div className="">
-        <h1 className="text-3xl font-bold">รายชื่อพนักงาน</h1>
-        <div className="mt-6">
+        <h1 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6">รายชื่อพนักงาน</h1>
+        <div className="w-full">
           <EmployeeTableClient
             initialEmployees={employees}
             initialTotal={total}

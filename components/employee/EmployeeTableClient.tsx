@@ -391,198 +391,257 @@ function EmployeeTableClient({
         )}
 
         {/* Search Form */}
-        <form onSubmit={handleSearch} className="mb-6 flex gap-4 flex-wrap">
-          <Input
-            type="text"
-            placeholder="ค้นหาพนักงาน"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-56"
-          />
-          <select
-            value={selectedPO}
-            onChange={(e) => setSelectedPO(e.target.value)}
-            className="w-64 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="">-- เลือก PO --</option>
-            {poList.map((po) => (
-              <option key={po.po_id} value={po.po_id}>
-                {po.po_number} - {po.job_position_name || "ไม่มีตำแหน่ง"}
-              </option>
-            ))}
-          </select>
-          {isAdmin && (
+        <form onSubmit={handleSearch} className="mb-6 space-y-4 md:space-y-0 md:flex md:gap-4 md:flex-wrap">
+          <div className="w-full md:w-56">
+            <Input
+              type="text"
+              placeholder="ค้นหาพนักงาน"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full"
+            />
+          </div>
+          <div className="w-full md:w-64">
             <select
-              value={selectedCompany}
-              onChange={(e) => setSelectedCompany(e.target.value)}
-              className="w-64 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              value={selectedPO}
+              onChange={(e) => setSelectedPO(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              <option value="">-- เลือกบริษัท --</option>
-              {companyList.map((company) => (
-                <option key={company.company_id} value={company.company_id}>
-                  {company.company_name}
+              <option value="">-- เลือก PO --</option>
+              {poList.map((po) => (
+                <option key={po.po_id} value={po.po_id}>
+                  {po.po_number} - {po.job_position_name || "ไม่มีตำแหน่ง"}
                 </option>
               ))}
             </select>
+          </div>
+          {isAdmin && (
+            <div className="w-full md:w-64">
+              <select
+                value={selectedCompany}
+                onChange={(e) => setSelectedCompany(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">-- เลือกบริษัท --</option>
+                {companyList.map((company) => (
+                  <option key={company.company_id} value={company.company_id}>
+                    {company.company_name}
+                  </option>
+                ))}
+              </select>
+            </div>
           )}
-          <Button type="submit" disabled={isPending}>
-            {isPending ? "กำลังค้นหา..." : "ค้นหา"}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              setSearchQuery("");
-              setSelectedPO("");
-              setSelectedCompany("");
-              setCurrentPage(1);
-              startTransition(() => {
-                loadEmployees(1, "", "", "");
-              });
-            }}
-            disabled={isPending}
-          >
-            ล้างการค้นหา
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+            <Button type="submit" disabled={isPending} className="w-full sm:w-auto">
+              {isPending ? "กำลังค้นหา..." : "ค้นหา"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setSearchQuery("");
+                setSelectedPO("");
+                setSelectedCompany("");
+                setCurrentPage(1);
+                startTransition(() => {
+                  loadEmployees(1, "", "", "");
+                });
+              }}
+              disabled={isPending}
+              className="w-full sm:w-auto"
+            >
+              ล้างการค้นหา
+            </Button>
+          </div>
         </form>
 
         {/* Results Summary */}
-        <div className="mb-4 text-sm text-gray-600">
+        <div className="mb-4 text-xs sm:text-sm text-gray-600 break-words">
           แสดง {employees.length} รายการ จากทั้งหมด {totalEmployees} รายการ
-          {searchQuery && ` (ค้นหา: "${searchQuery}")`}
-          {selectedPO &&
-            ` (PO: ${
-              poList.find((po) => po.po_id === selectedPO)?.po_number ||
-              selectedPO
-            })`}
+          {searchQuery && (
+            <span className="block sm:inline"> (ค้นหา: &quot;{searchQuery}&quot;)</span>
+          )}
+          {selectedPO && (
+            <span className="block sm:inline">
+              {" "}(PO: {
+                poList.find((po) => po.po_id === selectedPO)?.po_number ||
+                selectedPO
+              })
+            </span>
+          )}
           {isAdmin &&
-            selectedCompany &&
-            ` (บริษัท: ${
-              companyList.find(
-                (company) => company.company_id === selectedCompany
-              )?.company_name || selectedCompany
-            })`}
+            selectedCompany && (
+              <span className="block sm:inline">
+                {" "}(บริษัท: {
+                  companyList.find(
+                    (company) => company.company_id === selectedCompany
+                  )?.company_name || selectedCompany
+                })
+              </span>
+            )}
         </div>
 
         {/* Employee Table */}
-        <div className="overflow-x-auto shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-          <table className="min-w-full divide-y divide-gray-300">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  เลขบัตรประชาชน
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  รหัสพนักงาน
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  ชื่อ-นามสกุล
-                </th>
-                {isAdmin && (
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    บริษัท
-                  </th>
-                )}
-
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  เลข PO
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  ตำแหน่งงาน
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  วันที่เริ่มงาน
-                </th>
-
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  ตรวจสุขภาพ
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  ตรวจปัจจัยเสี่ยง
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  สถานะอบรม
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {employees.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={10}
-                    className="px-6 py-8 text-center text-gray-500"
-                  >
-                    {isPending ? "กำลังโหลดข้อมูล..." : "ไม่พบข้อมูลพนักงาน"}
-                  </td>
-                </tr>
-              ) : (
-                employees.map((employee, index) => (
-                  <tr
+        <div className="bg-white shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
+          {/* Mobile Card View */}
+          <div className="block md:hidden">
+            {employees.length === 0 ? (
+              <div className="px-4 py-8 text-center text-gray-500">
+                {isPending ? "กำลังโหลดข้อมูล..." : "ไม่พบข้อมูลพนักงาน"}
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-200">
+                {employees.map((employee, index) => (
+                  <div
                     key={`${employee.employee_id}-${index}`}
-                    className={`hover:bg-purple-100 cursor-pointer ${employee.blacklist ? 'bg-red-100' : ''}`}
+                    className={`p-4 cursor-pointer hover:bg-purple-50 ${employee.blacklist ? 'bg-red-50' : ''}`}
                     onClick={() => setSelectedEmployee(employee)}
                   >
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
-                      {employee.personal_id}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
-                      {employee.employee_code || "-"}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
-                      {employee.prefix_th} {employee.first_name_th}{" "}
-                      {employee.last_name_th}
-                    </td>
-                    {isAdmin && (
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
-                        {employee.company_name || "-"}
-                      </td>
-                    )}
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-start">
+                        <div className="font-medium text-gray-900 text-sm">
+                          {employee.prefix_th} {employee.first_name_th} {employee.last_name_th}
+                        </div>
+                        {employee.blacklist && (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                            Blacklist
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs text-gray-600 space-y-1">
+                        <div><span className="font-medium">รหัสพนักงาน:</span> {employee.employee_code || "-"}</div>
+                        <div><span className="font-medium">บัตรประชาชน:</span> {employee.personal_id}</div>
+                        {isAdmin && (
+                          <div><span className="font-medium">บริษัท:</span> {employee.company_name || "-"}</div>
+                        )}
+                        <div><span className="font-medium">PO:</span> {employee.po_number || "-"}</div>
+                        <div><span className="font-medium">ตำแหน่ง:</span> {employee.job_position_name || "-"}</div>
+                        <div><span className="font-medium">วันที่เริ่มงาน:</span> {formatDate(employee.start_date)}</div>
+                      </div>
+                      <div className="flex flex-wrap gap-2 text-xs">
+                        <span className="px-2 py-1 rounded-full bg-blue-100 text-blue-800">
+                          ตรวจสุขภาพ: คลิกเพื่อบันทึก
+                        </span>
+                        <span className="px-2 py-1 rounded-full bg-blue-100 text-blue-800">
+                          ตรวจปัจจัยเสี่ยง: คลิกเพื่อบันทึก
+                        </span>
+                        <span className="px-2 py-1 rounded-full bg-blue-100 text-blue-800">
+                          อบรม: {employee.course_progress_summary || 'ดูสถานะ'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
-                      {employee.po_number || "-"}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
-                      {employee.job_position_name || "-"}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
-                      {formatDate(employee.start_date)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 border-b cursor-pointer hover:text-blue-800 hover:underline">
-                      บันทึก
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 border-b cursor-pointer hover:text-blue-800 hover:underline">
-                      บันทึก
-                    </td>
+          {/* Desktop Table View */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-300">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    เลขบัตรประชาชน
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    รหัสพนักงาน
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    ชื่อ-นามสกุล
+                  </th>
+                  {isAdmin && (
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      บริษัท
+                    </th>
+                  )}
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    เลข PO
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    ตำแหน่งงาน
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    วันที่เริ่มงาน
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    สถานะอบรม
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {employees.length === 0 ? (
+                  <tr>
                     <td
-                      className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 border-b cursor-pointer hover:text-blue-800 hover:underline"
-                      onClick={(e) => handleShowCourseModal(employee, e)}
+                      colSpan={isAdmin ? 8 : 7}
+                      className="px-6 py-8 text-center text-gray-500"
                     >
-                      {employee.course_progress_summary || "ดูสถานะอบรม"}
+                      {isPending ? "กำลังโหลดข้อมูล..." : "ไม่พบข้อมูลพนักงาน"}
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  employees.map((employee, index) => (
+                    <tr
+                      key={`${employee.employee_id}-${index}`}
+                      className={`hover:bg-purple-100 cursor-pointer ${employee.blacklist ? 'bg-red-100' : ''}`}
+                      onClick={() => setSelectedEmployee(employee)}
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
+                        {employee.personal_id}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
+                        {employee.employee_code || "-"}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
+                        {employee.prefix_th} {employee.first_name_th}{" "}
+                        {employee.last_name_th}
+                      </td>
+                      {isAdmin && (
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
+                          {employee.company_name || "-"}
+                        </td>
+                      )}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
+                        {employee.po_number || "-"}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
+                        {employee.job_position_name || "-"}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
+                        {formatDate(employee.start_date)}
+                      </td>
+                      <td
+                        className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 border-b cursor-pointer hover:text-blue-800 hover:underline"
+                        onClick={(e) => handleShowCourseModal(employee, e)}
+                      >
+                        {employee.course_progress_summary || "ดูสถานะอบรม"}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="mt-6 flex items-center justify-between">
+          <div className="mt-6 flex flex-col sm:flex-row items-center justify-between space-y-3 sm:space-y-0">
             <div className="text-sm text-gray-700">
               หน้า {currentPage} จาก {totalPages}
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2 items-center">
               <Button
                 variant="outline"
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1 || isPending}
+                className="w-full sm:w-auto"
               >
                 หน้าก่อนหน้า
               </Button>
 
               {/* Page Numbers */}
-              <div className="flex gap-1">
+              <div className="flex gap-1 overflow-x-auto">
                 {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                   let pageNum;
                   if (totalPages <= 5) {
@@ -601,7 +660,7 @@ function EmployeeTableClient({
                       variant={currentPage === pageNum ? "default" : "outline"}
                       onClick={() => handlePageChange(pageNum)}
                       disabled={isPending}
-                      className="w-10 h-10 p-0"
+                      className="w-10 h-10 p-0 flex-shrink-0"
                     >
                       {pageNum}
                     </Button>
@@ -613,6 +672,7 @@ function EmployeeTableClient({
                 variant="outline"
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages || isPending}
+                className="w-full sm:w-auto"
               >
                 หน้าถัดไป
               </Button>
@@ -623,21 +683,21 @@ function EmployeeTableClient({
 
       {/* Employee Detail Modal */}
       {selectedEmployee && !isEditModalOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
           <div
-            className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto transform transition-all duration-300 ease-out scale-100"
+            className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto transform transition-all duration-300 ease-out scale-100"
             style={{
               animation: "modalFadeIn 0.3s ease-out",
             }}
           >
-            <div className="p-8">
+            <div className="p-4 sm:p-8">
               {/* Header */}
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-gray-800">
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-800">
                   ข้อมูลพนักงาน
                 </h2>
                 {selectedEmployee?.blacklist && (
-                  <div className="absolute top-7 left-0 w-full text-center text-3xl text-red-600 font-bold">
+                  <div className="absolute top-7 left-0 w-full text-center text-xl sm:text-3xl text-red-600 font-bold">
                     BLACKLIST!
                   </div>
                 )}
@@ -661,7 +721,7 @@ function EmployeeTableClient({
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 <div className="space-y-1">
                   <label className="block text-sm font-medium text-gray-700">
                     เลขบัตรประชาชน
@@ -795,43 +855,55 @@ function EmployeeTableClient({
 
               {/* Footer */}
               <div className="pt-6 border-t border-gray-100">
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center space-y-3 sm:space-y-0">
                   {!isAdmin && (
-                    <ChangeStatusButton
-                      employeeId={selectedEmployee.employee_id}
-                      onStatusChange={() => {
-                        setSelectedEmployee(null);
-                        // รีเฟรชข้อมูลตารางหลังเปลี่ยนสถานะ
-                        startTransition(() => {
-                          loadEmployees(
-                            currentPage,
-                            searchQuery,
-                            selectedPO,
-                            selectedCompany
-                          );
-                        });
-                      }}
-                    />
+                    <div className="w-full sm:w-auto">
+                      <ChangeStatusButton
+                        employeeId={selectedEmployee.employee_id}
+                        onStatusChange={() => {
+                          setSelectedEmployee(null);
+                          // รีเฟรชข้อมูลตารางหลังเปลี่ยนสถานะ
+                          startTransition(() => {
+                            loadEmployees(
+                              currentPage,
+                              searchQuery,
+                              selectedPO,
+                              selectedCompany
+                            );
+                          });
+                        }}
+                      />
+                    </div>
                   )}
 
                   {isAdmin && (
-                    <Button 
-                      variant="destructive" 
-                      onClick={handleBlacklist}
-                      disabled={isSubmitting || selectedEmployee?.blacklist}
-                    >
-                      {isSubmitting ? "กำลังดำเนินการ..." : selectedEmployee?.blacklist ? "Blacklisted" : "Blacklist"}
-                    </Button>
+                    <div className="w-full sm:w-auto">
+                      <Button 
+                        variant="destructive" 
+                        onClick={handleBlacklist}
+                        disabled={isSubmitting || selectedEmployee?.blacklist}
+                        className="w-full sm:w-auto"
+                      >
+                        {isSubmitting ? "กำลังดำเนินการ..." : selectedEmployee?.blacklist ? "Blacklisted" : "Blacklist"}
+                      </Button>
+                    </div>
                   )}
-                  <div className="flex justify-end space-x-3 ml-auto">
+                  <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 sm:ml-auto">
                     <Button
                       variant="outline"
                       onClick={handleCloseModal}
-                      className="px-6 py-2"
+                      className="w-full sm:w-auto px-6 py-2"
                     >
                       ปิด
                     </Button>
-                    {!isAdmin && <Button onClick={handleEdit}>แก้ไข</Button>}
+                    {!isAdmin && (
+                      <Button 
+                        onClick={handleEdit}
+                        className="w-full sm:w-auto"
+                      >
+                        แก้ไข
+                      </Button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -842,17 +914,17 @@ function EmployeeTableClient({
 
       {/* Edit Employee Modal */}
       {selectedEmployee && isEditModalOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
           <div
-            className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto transform transition-all duration-300 ease-out scale-100"
+            className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto transform transition-all duration-300 ease-out scale-100"
             style={{
               animation: "modalFadeIn 0.3s ease-out",
             }}
           >
-            <div className="p-8">
+            <div className="p-4 sm:p-8">
               {/* Header */}
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-gray-800">
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-800">
                   แก้ไขข้อมูลพนักงาน
                 </h2>
                 <button
@@ -875,8 +947,8 @@ function EmployeeTableClient({
                 </button>
               </div>
 
-              <form className="space-y-6" onSubmit={handleSaveEdit}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <form className="space-y-4 sm:space-y-6" onSubmit={handleSaveEdit}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                   {/* ข้อมูลที่ไม่สามารถแก้ไขได้ */}
                   <div className="space-y-1">
                     <label className="block text-sm font-medium text-gray-700">
@@ -1075,12 +1147,13 @@ function EmployeeTableClient({
                 </div>
 
                 {/* Footer */}
-                <div className="flex justify-end space-x-3 pt-6 border-t border-gray-100">
+                <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 pt-6 border-t border-gray-100">
                   <Button
                     type="button"
                     variant="outline"
                     onClick={handleCloseModal}
                     disabled={isSubmitting}
+                    className="w-full sm:w-auto"
                   >
                     ยกเลิก
                   </Button>
@@ -1089,12 +1162,13 @@ function EmployeeTableClient({
                     variant="outline"
                     onClick={() => setIsEditModalOpen(false)}
                     disabled={isSubmitting}
+                    className="w-full sm:w-auto"
                   >
                     กลับไปดูรายละเอียด
                   </Button>
                   <Button
                     type="submit"
-                    className="bg-green-600 hover:bg-green-700"
+                    className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
                     disabled={isSubmitting}
                   >
                     {isSubmitting ? "กำลังบันทึก..." : "บันทึกการแก้ไข"}
@@ -1108,14 +1182,14 @@ function EmployeeTableClient({
 
       {/* Course Status Modal */}
       {courseModalEmployee && showCourseModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
           <div
-            className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto transform transition-all duration-300 ease-out scale-100"
+            className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto transform transition-all duration-300 ease-out scale-100"
             style={{
               animation: "modalFadeIn 0.3s ease-out",
             }}
           >
-            <div className="p-8">
+            <div className="p-4 sm:p-8">
               {/* Header */}
               <div className="flex items-center justify-between mb-6">
                 <div>
@@ -1274,7 +1348,7 @@ function EmployeeTableClient({
                   <Button
                     variant="outline"
                     onClick={handleCloseCourseModal}
-                    className="px-6 py-2"
+                    className="w-full sm:w-auto px-6 py-2"
                   >
                     ปิด
                   </Button>
@@ -1287,9 +1361,9 @@ function EmployeeTableClient({
 
       {/* Course Completion Modal */}
       {completionModal.isOpen && completionModal.course && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg max-w-md w-full mx-4">
-            <div className="p-6">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-lg max-w-md w-full">
+            <div className="p-4 sm:p-6">
               {/* Header */}
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-gray-900">
@@ -1329,17 +1403,19 @@ function EmployeeTableClient({
               </div>
 
               {/* Footer */}
-              <div className="flex justify-end space-x-3">
+              <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3">
                 <Button
                   variant="outline"
                   onClick={handleCloseCompletionModal}
                   disabled={isSubmitting}
+                  className="w-full sm:w-auto"
                 >
                   ยกเลิก
                 </Button>
                 <Button
                   onClick={handleSaveCourseCompletion}
                   disabled={isSubmitting || !completionModal.completionDate}
+                  className="w-full sm:w-auto"
                 >
                   {isSubmitting ? "กำลังบันทึก..." : "บันทึก"}
                 </Button>

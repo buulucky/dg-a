@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getPOList, getPOEmployeeStats, type POOption, type POEmployeeStats } from "@/app/dashboard/po-actions";
+import { getPOList, getPOEmployeeStats, type POOption, type POEmployeeStats } from "@/app/dashboard/actions";
 import { Users, UserPlus, UserMinus, AlertTriangle, CheckCircle } from "lucide-react";
 import MonthlyChart from "./MonthlyChart";
 import RecentEmployees from "./RecentEmployees";

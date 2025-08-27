@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { updateEmployeeContractStatus } from "@/app/employee/actions.contract-status";
+import { updateEmployeeContractStatus } from "@/app/employee/actions";
 import { toast } from "@/lib/toast";
 
 interface ChangeStatusButtonProps {

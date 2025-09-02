@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/lib/toast";
-import { createClient } from "@/lib/supabase/client";
+import { getFunctions, getJobPositions, getCompanies, addPO, getUserRole } from "@/app/admin/management/po/actions";
 
 const modalStyles = `
   @keyframes modalFadeIn {
@@ -23,8 +23,6 @@ interface AddPOButtonProps {
   onPOAdded?: () => void;
 }
 
-// ...existing code...
-
 export default function AddPOButton({ onPOAdded }: AddPOButtonProps) {
   const [open, setOpen] = useState(false);
   const [poNumber, setPONumber] = useState("");
@@ -36,6 +34,12 @@ export default function AddPOButton({ onPOAdded }: AddPOButtonProps) {
   const [quantity, setQuantity] = useState("");
   const [paymentType, setPaymentType] = useState("");
   const [loading, setLoading] = useState(false);
+  
+  // Authentication states
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  
+  // Data states
   const [functions, setFunctions] = useState<{ function_id: string; function_code: string }[]>([]);
   const [jobPositions, setJobPositions] = useState<{ job_position_id: string; job_position_name: string }[]>([]);
   const [companies, setCompanies] = useState<{ company_id: string; company_name: string }[]>([]);
@@ -43,165 +47,101 @@ export default function AddPOButton({ onPOAdded }: AddPOButtonProps) {
   const [loadingJobPositions, setLoadingJobPositions] = useState(false);
   const [loadingCompanies, setLoadingCompanies] = useState(false);
 
+  // ตรวจสอบสิทธิ์ admin
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      setIsCheckingAuth(true);
+      try {
+        // ใช้ getUserRole จาก actions
+        const result = await getUserRole();
+        setIsAdmin(result.isAdmin);
+      } catch (error) {
+        console.error("Error checking admin status:", error);
+        setIsAdmin(false);
+      } finally {
+        setIsCheckingAuth(false);
+      }
+    };
+
+    checkAdminStatus();
+  }, []);
+
+  // ดึงข้อมูล Functions
   useEffect(() => {
     const fetchFunctions = async () => {
       setLoadingFunctions(true);
-      const supabase = createClient();
-      const { data, error } = await supabase.from("functions").select("function_id, function_code");
-
+      const result = await getFunctions();
       setLoadingFunctions(false);
 
-      if (error) {
-        toast.error("เกิดข้อผิดพลาดในการโหลดข้อมูลฟังก์ชัน: " + error.message);
+      if (result.error) {
+        toast.error("เกิดข้อผิดพลาดในการโหลดข้อมูลฟังก์ชัน: " + result.error);
       } else {
-        setFunctions(data || []);
+        setFunctions(result.data);
       }
     };
 
     fetchFunctions();
   }, []);
 
+  // ดึงข้อมูล Job Positions
   useEffect(() => {
     const fetchJobPositions = async () => {
-      if (!selectedFunctionId) {
-        setJobPositions([]);
-        setSelectedJobPositionId("");
-        setSelectedCompanyId("");
-        return;
-      }
-
       setLoadingJobPositions(true);
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from("function_positions")
-        .select(`
-          job_position_id,
-          job_positions!inner(job_position_name)
-        `)
-        .eq("function_id", selectedFunctionId);
-
-      console.log("Selected Function ID:", selectedFunctionId);
-      console.log("Job Positions Data:", data);
-
+      const result = await getJobPositions();
       setLoadingJobPositions(false);
 
-      if (error) {
-        console.error("Error fetching job positions:", error);
-        toast.error("เกิดข้อผิดพลาดในการโหลดข้อมูลตำแหน่งงาน: " + error.message);
+      if (result.error) {
+        toast.error("เกิดข้อผิดพลาดในการโหลดข้อมูลตำแหน่งงาน: " + result.error);
       } else {
-        console.log("Raw job positions data:", data); // Debug
-        const formattedData = data?.map((item: { job_position_id: string; job_positions?: { job_position_name: string } | { job_position_name: string }[] }) => {
-          console.log("Item structure:", item); // Debug each item
-          return {
-            job_position_id: item.job_position_id,
-            job_position_name: (Array.isArray(item.job_positions)
-              ? item.job_positions[0]?.job_position_name
-              : (item.job_positions as { job_position_name: string } | undefined)?.job_position_name) || "Unknown Position",
-          };
-        }) || [];
-        console.log("Formatted job positions:", formattedData); // Debug
-        setJobPositions(formattedData);
-        setSelectedJobPositionId("");
-        setSelectedCompanyId("");
+        console.log("All Job Positions Data:", result.data);
+        setJobPositions(result.data);
       }
     };
 
     fetchJobPositions();
-  }, [selectedFunctionId]);
+  }, []);
 
+  // ดึงข้อมูล Companies
   useEffect(() => {
     const fetchCompanies = async () => {
-      if (!selectedFunctionId || !selectedJobPositionId) {
-        setCompanies([]);
-        setSelectedCompanyId("");
-        return;
-      }
-
       setLoadingCompanies(true);
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from("function_position_companies")
-        .select(`
-          company_id,
-          companies!inner(company_name)
-        `)
-        .eq("function_id", selectedFunctionId)
-        .eq("job_position_id", selectedJobPositionId);
-
-      console.log("Selected Function ID:", selectedFunctionId);
-      console.log("Selected Job Position ID:", selectedJobPositionId);
-      console.log("Companies Data:", data);
-
+      const result = await getCompanies();
       setLoadingCompanies(false);
 
-      if (error) {
-        console.error("Error fetching companies:", error); // Debug
-        toast.error("เกิดข้อผิดพลาดในการโหลดข้อมูลบริษัท: " + error.message);
+      if (result.error) {
+        toast.error("เกิดข้อผิดพลาดในการโหลดข้อมูลบริษัท: " + result.error);
       } else {
-        console.log("Raw companies data:", data); // Debug
-        const formattedData = data?.map((item: { company_id: string; companies?: { company_name: string } | { company_name: string }[] }) => {
-          console.log("Company item structure:", item); // Debug each item
-          return {
-            company_id: item.company_id,
-            company_name: (Array.isArray(item.companies)
-              ? item.companies[0]?.company_name
-              : (item.companies as { company_name: string } | undefined)?.company_name) || "Unknown Company",
-          };
-        }) || [];
-        console.log("Formatted companies:", formattedData); // Debug
-        setCompanies(formattedData);
-        setSelectedCompanyId("");
+        console.log("All Companies Data:", result.data);
+        setCompanies(result.data);
       }
     };
 
     fetchCompanies();
-  }, [selectedFunctionId, selectedJobPositionId]);
+  }, []);
 
   const handleAddPO = async () => {
-    if (!poNumber || !selectedFunctionId || !selectedJobPositionId || !selectedCompanyId || 
-        !contractStartDate || !contractEndDate || !quantity || !paymentType) {
-      toast.error("กรุณากรอกข้อมูลให้ครบถ้วน");
+    // ตรวจสอบสิทธิ์ admin อีกครั้งก่อนดำเนินการ
+    if (!isAdmin) {
+      toast.error("ไม่มีสิทธิ์ในการเพิ่ม PO - เฉพาะผู้ดูแลระบบเท่านั้น");
       return;
     }
 
     setLoading(true);
-    const supabase = createClient();
 
-    // ตรวจสอบว่าเลข PO ซ้ำหรือไม่
-    const { data: existingPO, error: checkError } = await supabase
-      .from("po")
-      .select("po_number")
-      .eq("po_number", poNumber)
-      .single();
-
-    if (checkError && checkError.code !== "PGRST116") { // PGRST116: No rows found
-      setLoading(false);
-      toast.error("เกิดข้อผิดพลาดในการตรวจสอบเลข PO: " + checkError.message);
-      return;
-    }
-
-    if (existingPO) {
-      setLoading(false);
-      toast.error("เลข PO นี้มีอยู่ในระบบแล้ว");
-      return;
-    }
-
-    const { error } = await supabase.from("po").insert({
+    const result = await addPO({
       po_number: poNumber,
       function_id: selectedFunctionId,
       job_position_id: selectedJobPositionId,
       company_id: selectedCompanyId,
       start_date: contractStartDate,
       end_date: contractEndDate,
-      employee_count: parseInt(quantity),
+      employee_count: quantity,
       po_type: paymentType,
     });
 
     setLoading(false);
 
-    if (error) {
-      toast.error("เกิดข้อผิดพลาดในการเพิ่ม PO: " + error.message);
-    } else {
+    if (result.success) {
       toast.success("เพิ่ม PO สำเร็จ");
       setOpen(false);
       setPONumber("");
@@ -213,16 +153,28 @@ export default function AddPOButton({ onPOAdded }: AddPOButtonProps) {
       setQuantity("");
       setPaymentType("");
       if (onPOAdded) onPOAdded();
+    } else {
+      toast.error(result.error || "เกิดข้อผิดพลาดในการเพิ่ม PO");
     }
   };
 
   return (
     <>
       <style jsx>{modalStyles}</style>
-      <Button onClick={() => setOpen(true)}>+ เพิ่ม PO ใหม่</Button>
+      
+      {/* แสดงปุ่มเฉพาะเมื่อเป็น admin */}
+      {isCheckingAuth ? (
+        <Button disabled>กำลังตรวจสอบสิทธิ์...</Button>
+      ) : isAdmin ? (
+        <Button onClick={() => setOpen(true)}>+ เพิ่ม PO ใหม่</Button>
+      ) : (
+        <div className="text-sm text-gray-500">
+          เฉพาะผู้ดูแลระบบเท่านั้นที่สามารถเพิ่ม PO ได้
+        </div>
+      )}
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center  backdrop-blur-sm  justify-center p-4 bg-black bg-opacity-50">
+        <div className="fixed inset-0 z-50 flex items-center backdrop-blur-sm justify-center p-4 bg-black bg-opacity-50">
           <div
             className="bg-white rounded-lg shadow-xl max-w-md w-full p-6"
             style={{ animation: "modalFadeIn 0.2s ease-out" }}
@@ -267,7 +219,6 @@ export default function AddPOButton({ onPOAdded }: AddPOButtonProps) {
                   value={selectedJobPositionId}
                   onChange={(e) => setSelectedJobPositionId(e.target.value)}
                   className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 p-2 border"
-                  disabled={!selectedFunctionId}
                 >
                   <option value="">เลือกตำแหน่งงาน</option>
                   {loadingJobPositions ? (
@@ -288,7 +239,6 @@ export default function AddPOButton({ onPOAdded }: AddPOButtonProps) {
                   value={selectedCompanyId}
                   onChange={(e) => setSelectedCompanyId(e.target.value)}
                   className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 p-2 border"
-                  disabled={!selectedFunctionId || !selectedJobPositionId}
                 >
                   <option value="">เลือกบริษัท</option>
                   {loadingCompanies ? (
@@ -344,7 +294,6 @@ export default function AddPOButton({ onPOAdded }: AddPOButtonProps) {
                   <option value="รายวัน">รายวัน</option>
                 </select>
               </div>
-
             </div>
             <div className="flex justify-end space-x-3 mt-6">
               <Button variant="outline" onClick={() => setOpen(false)}>

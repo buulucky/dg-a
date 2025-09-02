@@ -40,7 +40,7 @@ export async function getUserRole() {
   return { isAdmin, user };
 }
 
-export async function getPOs(page = 1, limit = 15, searchQuery = "") {
+export async function getPOs(page = 1, limit = 15, searchQuery = "", companyFilter = "") {
   const supabase = await createClient();
   
   // ตรวจสอบสิทธิ์ผู้ใช้
@@ -73,7 +73,12 @@ export async function getPOs(page = 1, limit = 15, searchQuery = "") {
     }
   }
 
-  // เพิ่มการค้นหา
+  // เพิ่มการกรองตามบริษัท (ถ้ามีการเลือกบริษัทเฉพาะ)
+  if (companyFilter.trim()) {
+    query = query.eq("company_id", parseInt(companyFilter));
+  }
+
+  // เพิ่มการค้นหาทั่วไป
   if (searchQuery.trim()) {
     query = query.or(`po_number.ilike.%${searchQuery}%,company_name.ilike.%${searchQuery}%,function_code.ilike.%${searchQuery}%,job_position_name.ilike.%${searchQuery}%`);
   }
@@ -112,6 +117,193 @@ export async function getPOs(page = 1, limit = 15, searchQuery = "") {
   const totalPages = Math.ceil(total / limit);
 
   return { data: formattedData, total, totalPages };
+}
+
+// ฟังก์ชันดึงข้อมูล Functions
+export async function getFunctions() {
+  const supabase = await createClient();
+  
+  const { data, error } = await supabase
+    .from("functions")
+    .select("function_id, function_code")
+    .order("function_code", { ascending: true });
+
+  if (error) {
+    console.error("Error fetching functions:", error);
+    return { data: [], error: error.message };
+  }
+
+  const formattedData = data?.map((item) => ({
+    function_id: item.function_id.toString(),
+    function_code: item.function_code,
+  })) || [];
+
+  return { data: formattedData, error: null };
+}
+
+// ฟังก์ชันดึงข้อมูล Job Positions ทั้งหมด
+export async function getJobPositions() {
+  const supabase = await createClient();
+  
+  const { data, error } = await supabase
+    .from("job_positions")
+    .select("job_position_id, job_position_name")
+    .order("job_position_name", { ascending: true });
+
+  if (error) {
+    console.error("Error fetching job positions:", error);
+    return { data: [], error: error.message };
+  }
+
+  const formattedData = data?.map((item) => ({
+    job_position_id: item.job_position_id.toString(),
+    job_position_name: item.job_position_name,
+  })) || [];
+
+  return { data: formattedData, error: null };
+}
+
+// ฟังก์ชันดึงข้อมูล Companies ทั้งหมด
+export async function getCompanies() {
+  const supabase = await createClient();
+  
+  const { data, error } = await supabase
+    .from("companies")
+    .select("company_id, company_name")
+    .order("company_name", { ascending: true });
+
+  if (error) {
+    console.error("Error fetching companies:", error);
+    return { data: [], error: error.message };
+  }
+
+  const formattedData = data?.map((item) => ({
+    company_id: item.company_id.toString(),
+    company_name: item.company_name,
+  })) || [];
+
+  return { data: formattedData, error: null };
+}
+
+// ฟังก์ชันดึงรายการบริษัททั้งหมดสำหรับการกรอง
+export async function getCompaniesForFilter() {
+  const supabase = await createClient();
+  
+  // ตรวจสอบสิทธิ์ผู้ใช้
+  const { isAdmin, user } = await getUserRole();
+  
+  if (!isAdmin && !user) {
+    return { data: [], error: "ไม่มีสิทธิ์เข้าถึงข้อมูล" };
+  }
+
+  let query = supabase
+    .from("companies")
+    .select("company_id, company_name")
+    .order("company_name", { ascending: true });
+
+  // ถ้าไม่ใช่ Admin ให้ดูเฉพาะบริษัทของตัวเอง
+  if (!isAdmin) {
+    const { data: userProfile } = await supabase
+      .from("user_profiles")
+      .select("company_id")
+      .eq("id", user.id)
+      .single();
+
+    if (userProfile?.company_id) {
+      query = query.eq("company_id", userProfile.company_id);
+    } else {
+      return { data: [], error: null };
+    }
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error("Error fetching companies for filter:", error);
+    return { data: [], error: error.message };
+  }
+
+  const formattedData = data?.map((item) => ({
+    company_id: item.company_id.toString(),
+    company_name: item.company_name,
+  })) || [];
+
+  return { data: formattedData, error: null };
+}
+
+// ฟังก์ชันเพิ่ม PO ใหม่
+export async function addPO(poData: {
+  po_number: string;
+  function_id: string;
+  job_position_id: string;
+  company_id: string;
+  start_date: string;
+  end_date: string;
+  employee_count: string;
+  po_type: string;
+}) {
+  const supabase = await createClient();
+  
+  // ตรวจสอบสิทธิ์ admin
+  const { isAdmin } = await getUserRole();
+  
+  if (!isAdmin) {
+    return { success: false, error: "ไม่มีสิทธิ์ในการเพิ่ม PO - เฉพาะผู้ดูแลระบบเท่านั้น" };
+  }
+
+  // ตรวจสอบข้อมูลครบถ้วน
+  if (!poData.po_number || !poData.function_id || !poData.job_position_id || 
+      !poData.company_id || !poData.start_date || !poData.end_date || 
+      !poData.employee_count || !poData.po_type) {
+    return { success: false, error: "กรุณากรอกข้อมูลให้ครบทุกช่อง" };
+  }
+
+  // ตรวจสอบวันที่
+  if (new Date(poData.end_date) <= new Date(poData.start_date)) {
+    return { success: false, error: "วันสิ้นสุดสัญญาต้องมากกว่าวันเริ่มสัญญา" };
+  }
+
+  try {
+    // ตรวจสอบว่าเลข PO ซ้ำหรือไม่
+    const { data: existingPO, error: checkError } = await supabase
+      .from("po")
+      .select("po_number")
+      .eq("po_number", poData.po_number)
+      .single();
+
+    if (checkError && checkError.code !== "PGRST116") { // PGRST116: No rows found
+      return { success: false, error: "เกิดข้อผิดพลาดในการตรวจสอบเลข PO: " + checkError.message };
+    }
+
+    if (existingPO) {
+      return { success: false, error: "เลข PO นี้มีอยู่ในระบบแล้ว" };
+    }
+
+    // เพิ่ม PO ใหม่
+    const { data, error } = await supabase
+      .from("po")
+      .insert({
+        po_number: poData.po_number,
+        function_id: parseInt(poData.function_id),
+        job_position_id: parseInt(poData.job_position_id),
+        company_id: parseInt(poData.company_id),
+        start_date: poData.start_date,
+        end_date: poData.end_date,
+        employee_count: parseInt(poData.employee_count),
+        po_type: poData.po_type,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      return { success: false, error: "เกิดข้อผิดพลาดในการเพิ่ม PO: " + error.message };
+    }
+
+    return { success: true, data, error: null };
+  } catch (error) {
+    console.error("Unexpected error adding PO:", error);
+    return { success: false, error: "เกิดข้อผิดพลาดที่ไม่คาดคิด" };
+  }
 }
 
 export async function updatePO(poId: number, updateData: {

@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 export default async function PoManagement() {
   const [roleResult, posResult] = await Promise.all([
     getUserRole(),
-    getPOs(1, 15, "")
+    getPOs(1, 15, "", "") // เพิ่มพารามิเตอร์ companyFilter ว่าง
   ]);
 
   const isAdmin = roleResult.isAdmin;

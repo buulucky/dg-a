@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { getPOs, updatePO, type PO } from "@/app/admin/management/po/actions";
+import { getPOs, updatePO, getCompaniesForFilter, type PO } from "@/app/admin/management/po/actions";
 import { toast } from "@/lib/toast";
 import AddPOButton from "./AddPOButton";
 
@@ -41,13 +41,33 @@ function POTableClient({
   const [totalPOs, setTotalPOs] = useState(initialTotal);
   const [totalPages, setTotalPages] = useState(initialTotalPages);
   const [searchQuery, setSearchQuery] = useState("");
+  const [companyFilter, setCompanyFilter] = useState("");
+  const [companies, setCompanies] = useState<{ company_id: string; company_name: string }[]>([]);
+  const [loadingCompanies, setLoadingCompanies] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [selectedPO, setSelectedPO] = useState<PO | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const loadPOs = async (page: number, searchQuery: string) => {
-    const result = await getPOs(page, 15, searchQuery);
+  // ดึงรายการบริษัทเพื่อใช้ในการกรอง
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      setLoadingCompanies(true);
+      const result = await getCompaniesForFilter();
+      setLoadingCompanies(false);
+
+      if (result.error) {
+        console.error("Error fetching companies for filter:", result.error);
+      } else {
+        setCompanies(result.data);
+      }
+    };
+
+    fetchCompanies();
+  }, []);
+
+  const loadPOs = async (page: number, searchQuery: string, companyFilter: string = "") => {
+    const result = await getPOs(page, 15, searchQuery, companyFilter);
     if (result.error) {
       toast.error("เกิดข้อผิดพลาดในการโหลดข้อมูล PO: " + result.error);
     } else {
@@ -61,14 +81,14 @@ function POTableClient({
     e.preventDefault();
     startTransition(() => {
       setCurrentPage(1);
-      loadPOs(1, searchQuery);
+      loadPOs(1, searchQuery, companyFilter);
     });
   };
 
   const handlePageChange = (page: number) => {
     startTransition(() => {
       setCurrentPage(page);
-      loadPOs(page, searchQuery);
+      loadPOs(page, searchQuery, companyFilter);
     });
   };
 
@@ -93,7 +113,7 @@ function POTableClient({
 
   const handleRefresh = () => {
     startTransition(() => {
-      loadPOs(currentPage, searchQuery);
+      loadPOs(currentPage, searchQuery, companyFilter);
     });
   };
 
@@ -159,37 +179,67 @@ function POTableClient({
         )}
 
         {/* Search Form */}
-        <form onSubmit={handleSearch} className="mb-6 flex gap-4">
-          <Input
-            type="text"
-            placeholder="ค้นหา PO (เลข PO, บริษัท, หน้าที่, ตำแหน่ง)"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-80"
-          />
-          <Button type="submit" disabled={isPending}>
-            {isPending ? "กำลังค้นหา..." : "ค้นหา"}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              setSearchQuery("");
-              setCurrentPage(1);
-              startTransition(() => {
-                loadPOs(1, "");
-              });
-            }}
-            disabled={isPending}
-          >
-            ล้างการค้นหา
-          </Button>
+        <form onSubmit={handleSearch} className="mb-6 space-y-4 md:space-y-0 md:flex md:gap-4 md:flex-wrap">
+          {/* ช่องค้นหาทั่วไป */}
+          <div className="w-full md:w-56">
+            <Input
+              type="text"
+              placeholder="ค้นหา PO (เลข PO, บริษัท, หน้าที่, ตำแหน่ง)"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full"
+            />
+          </div>
+          
+          {/* Dropdown เลือกบริษัท */}
+          <div className="w-full md:w-64">
+            <select
+              value={companyFilter}
+              onChange={(e) => setCompanyFilter(e.target.value)}
+              className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 p-2 border text-sm"
+              disabled={loadingCompanies}
+            >
+              <option value="">-- เลือกบริษัท --</option>
+              {loadingCompanies ? (
+                <option disabled>กำลังโหลด...</option>
+              ) : (
+                companies.map((company) => (
+                  <option key={company.company_id} value={company.company_id}>
+                    {company.company_name}
+                  </option>
+                ))
+              )}
+            </select>
+          </div>
+          
+          <div className="flex gap-2">
+            <Button type="submit" disabled={isPending}>
+              {isPending ? "กำลังค้นหา..." : "ค้นหา"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setSearchQuery("");
+                setCompanyFilter("");
+                setCurrentPage(1);
+                startTransition(() => {
+                  loadPOs(1, "", "");
+                });
+              }}
+              disabled={isPending}
+            >
+              ล้างการค้นหา
+            </Button>
+          </div>
         </form>
 
         {/* Results Summary */}
         <div className="mb-4 text-sm text-gray-600">
           แสดง {pos.length} รายการ จากทั้งหมด {totalPOs} รายการ
           {searchQuery && ` (ค้นหา: "${searchQuery}")`}
+          {companyFilter && companies.find(c => c.company_id === companyFilter) && 
+            ` (กรองตามบริษัท: "${companies.find(c => c.company_id === companyFilter)?.company_name}")`}
         </div>
 
         {/* PO Table */}
